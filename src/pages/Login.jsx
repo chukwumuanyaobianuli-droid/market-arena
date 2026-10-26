@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { isValidNgPhone } from '../utils/phone';
-import { Lock, Mail, User, Phone, MapPin, AlertCircle, ShoppingBag } from 'lucide-react';
+import { Lock, Mail, User, Phone, MapPin, AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const [isSignup, setIsSignup] = useState(false);
@@ -112,20 +112,24 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-8">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 py-8 bg-gray-50/50">
       <div className="max-w-md w-full bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
         
-        {/* Header */}
+        {/* Header with Custom Logo */}
         <div className="text-center mb-6">
-          <div className="inline-flex p-3 bg-brand-50 text-brand-600 rounded-2xl mb-3">
-            <ShoppingBag className="w-8 h-8" />
+          <div className="flex justify-center mb-3">
+            <img 
+              src="/logo.png" 
+              alt="Market Arena Logo" 
+              className="w-16 h-16 object-contain rounded-2xl p-1 bg-emerald-50/50 border border-emerald-100 shadow-sm"
+            />
           </div>
           <h2 className="text-2xl font-bold text-gray-900">
             {isSignup ? 'Create Market Arena Account' : 'Welcome Back'}
           </h2>
           <p className="text-xs text-gray-500 mt-1">
             {isSignup 
-              ? 'Start buying and selling with Calabar students & residents' 
+              ? 'Start buying and selling with Calabar residents & vendors' 
               : 'Sign in to manage your listings and contact sellers'}
           </p>
         </div>
@@ -139,7 +143,7 @@ export default function Login() {
         )}
 
         {message && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 text-xs rounded-xl">
+          <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-[#064E3B] text-xs rounded-xl">
             {message}
           </div>
         )}
@@ -149,7 +153,7 @@ export default function Login() {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="w-full flex items-center justify-center space-x-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2.5 rounded-xl text-sm transition-colors mb-4 shadow-sm disabled:opacity-50"
+          className="w-full flex items-center justify-center space-x-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-2.5 rounded-xl text-xs sm:text-sm transition-colors mb-4 shadow-sm disabled:opacity-50 cursor-pointer"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -174,7 +178,7 @@ export default function Login() {
 
         <div className="relative flex py-2 items-center mb-4">
           <div className="flex-grow border-t border-gray-200"></div>
-          <span className="flex-shrink mx-3 text-gray-400 text-xs font-medium uppercase">Or with Email</span>
+          <span className="flex-shrink mx-3 text-gray-400 text-[10px] font-bold tracking-wider uppercase">Or with Email</span>
           <div className="flex-grow border-t border-gray-200"></div>
         </div>
 
@@ -184,7 +188,7 @@ export default function Login() {
           {isSignup && (
             <>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Full Name</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name</label>
                 <div className="relative">
                   <User className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                   <input
@@ -193,13 +197,13 @@ export default function Login() {
                     placeholder="e.g. Chukwuma Obianuli"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-brand-600 bg-gray-50 focus:bg-white"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#22C55E] bg-gray-50/50 focus:bg-white transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">WhatsApp Number</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">WhatsApp Number</label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                   <input
@@ -208,19 +212,19 @@ export default function Login() {
                     placeholder="e.g. 08123456789"
                     value={whatsappNumber}
                     onChange={(e) => setWhatsappNumber(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-brand-600 bg-gray-50 focus:bg-white"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#22C55E] bg-gray-50/50 focus:bg-white transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Calabar Area</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Calabar Area</label>
                 <div className="relative">
                   <MapPin className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                   <select
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-brand-600 bg-gray-50 focus:bg-white cursor-pointer"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#22C55E] bg-gray-50/50 focus:bg-white cursor-pointer transition-all"
                   >
                     {locations.map((loc) => (
                       <option key={loc} value={loc}>{loc}</option>
@@ -232,7 +236,7 @@ export default function Login() {
           )}
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Email Address</label>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
             <div className="relative">
               <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
               <input
@@ -241,13 +245,13 @@ export default function Login() {
                 placeholder="name@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-brand-600 bg-gray-50 focus:bg-white"
+                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#22C55E] bg-gray-50/50 focus:bg-white transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">Password</label>
             <div className="relative">
               <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
               <input
@@ -256,7 +260,7 @@ export default function Login() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-brand-600 bg-gray-50 focus:bg-white"
+                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#22C55E] bg-gray-50/50 focus:bg-white transition-all"
               />
             </div>
           </div>
@@ -266,7 +270,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={handleReset}
-                className="text-xs text-brand-600 font-medium hover:underline"
+                className="text-xs text-[#16a34a] font-semibold hover:underline cursor-pointer"
               >
                 Forgot password?
               </button>
@@ -276,7 +280,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 rounded-xl text-sm transition-colors mt-2 shadow-sm disabled:opacity-50"
+            className="w-full bg-[#22C55E] hover:bg-[#16a34a] text-white font-bold py-2.5 rounded-xl text-xs sm:text-sm transition-all shadow-md shadow-emerald-600/20 mt-2 disabled:opacity-50 cursor-pointer"
           >
             {loading ? 'Please wait...' : (isSignup ? 'Create Account' : 'Sign In')}
           </button>
@@ -291,7 +295,7 @@ export default function Login() {
               setIsSignup(!isSignup);
               setError('');
             }}
-            className="text-brand-600 font-semibold hover:underline"
+            className="text-[#16a34a] font-bold hover:underline cursor-pointer"
           >
             {isSignup ? 'Log In' : 'Sign Up'}
           </button>

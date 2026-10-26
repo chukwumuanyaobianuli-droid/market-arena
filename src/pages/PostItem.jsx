@@ -10,7 +10,6 @@ import { Upload, X, AlertCircle, ShoppingBag, Phone, Zap } from 'lucide-react';
 import { uploadImageToCloudinary } from '../utils/imageUpload';
 
 const MAX_PHOTOS = 3;
-const MAX_TOTAL_SIZE = 850000; // Firestore document limit is about 1MB
 
 export default function PostItem() {
   const { currentUser, userProfile, updateUserProfile } = useAuth();
@@ -60,7 +59,7 @@ export default function PostItem() {
     }
 
     setError('');
-    setLoading(true);
+    setProcessing(true);
     try {
       const uploadedUrls = await Promise.all(
         files.map(async (file) => {
@@ -71,7 +70,7 @@ export default function PostItem() {
     } catch (err) {
       setError(err.message || 'Failed to upload photos.');
     } finally {
-      setLoading(false);
+      setProcessing(false);
     }
   };
 
@@ -83,15 +82,10 @@ export default function PostItem() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentUser) return navigate('/login');
-    if (loading) return setError('Please wait, photos are still loading.');
+    if (processing) return setError('Please wait, photos are still uploading.');
     if (images.length === 0) return setError('Please upload at least 1 photo of your item.');
     if (!isValidNgPhone(whatsapp)) return setError('Enter a valid WhatsApp number, e.g. 08123456789.');
     if (Number(price) <= 0) return setError('Enter a price greater than 0.');
-
-    const totalSize = images.reduce((sum, img) => sum + img.length, 0);
-    if (totalSize > MAX_TOTAL_SIZE) {
-      return setError('Photos are too big together. Remove one photo and try again.');
-    }
 
     try {
       setLoading(true);
@@ -109,7 +103,7 @@ export default function PostItem() {
         condition,
         location,
         description: description.trim(),
-        images, // Array of small base64 strings
+        images, // Cloudinary image links
         sellerId: currentUser.uid,
         sellerName: userProfile?.displayName || 'Market Arena Seller',
         whatsappNumber: whatsapp,
