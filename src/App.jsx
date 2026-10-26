@@ -8,6 +8,8 @@ import Profile from './pages/Profile';
 import PostItem from './pages/PostItem';
 import ItemDetails from './pages/ItemDetails';
 import MyListings from './pages/MyListings';
+import VendorStore from './pages/VendorStore';
+import AdminDashboard from './pages/AdminDashboard';
 
 // Go to top of the page every time the route changes
 function ScrollToTop() {
@@ -45,6 +47,8 @@ export default function App() {
             <Route path="/item/:id" element={<ItemDetails />} />
             <Route path="/my-listings" element={<MyListings />} />
             <Route path="*" element={<NotFound />} />
+            <Route path="/vendor/:sellerId" element={<VendorStore />} />
+            <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
         </div>
         <Footer />

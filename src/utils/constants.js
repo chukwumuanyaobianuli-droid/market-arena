@@ -1,6 +1,13 @@
 // One place for lists used across the app
+export const CONDITIONS = [
+  'Brand New',
+  'UK Used (Foreign Used)',
+  'Nigerian Used (Clean)',
+  'Fairly Used'
+];
+
 export const LOCATIONS = [
-  'UNICAL',
+  'UNICAL Campus (Malabor)',
   'UNICROSS',
   'Etta Agbo',
   'Marian Road',
@@ -8,11 +15,24 @@ export const LOCATIONS = [
   'Satellite Town',
   'Atimbo',
   'State Housing',
+  'Parliamentary Extension',
+  '8 Miles',
+  'Ikot Ansa',
+  'Goldie',
+  'Effio Ette'
+];
+export const CATEGORIES = [
+  'Hostels & Rooms', // <-- Add this first!
+  'Phones & Laptops',
+  'Electronics',
+  'Fashion & Wear',
+  'Hostels & Accommodation',
+  'Books & Study Materials',
+  'Services',
+  'Others'
 ];
 
-export const CATEGORIES = ['Gadgets', 'Fashion', 'Hostel Gear', 'Vehicles', 'Services', 'Books'];
 
-export const CONDITIONS = ['Brand New', 'Used - Like New', 'Fair'];
 
 // Boost (featured listing) plans. Price is in Naira.
 export const BOOST_PLANS = [

@@ -1,10 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, MessageCircle } from 'lucide-react';
 import { whatsappLink } from '../utils/phone';
 import { isBoosted } from '../utils/constants';
 
 export default function ProductCard({ item }) {
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    const savedItems = JSON.parse(localStorage.getItem('market_arena_favorites') || '[]');
+    setIsSaved(savedItems.includes(item.id));
+  }, [item.id]);
+
+  const toggleSave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    let savedItems = JSON.parse(localStorage.getItem('market_arena_favorites') || '[]');
+    if (isSaved) {
+      savedItems = savedItems.filter(id => id !== item.id);
+      setIsSaved(false);
+    } else {
+      savedItems.push(item.id);
+      setIsSaved(true);
+    }
+    localStorage.setItem('market_arena_favorites', JSON.stringify(savedItems));
+  };
+
   // Format price in Nigerian Naira
   const formattedPrice = Number(item.price).toLocaleString();
 
@@ -15,7 +37,7 @@ export default function ProductCard({ item }) {
   );
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-between">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-between relative group">
       
       {/* Image & Badges */}
       <Link to={`/item/${item.id}`} className="relative h-48 bg-gray-100 block overflow-hidden">
@@ -25,14 +47,34 @@ export default function ProductCard({ item }) {
           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
           loading="lazy"
         />
-        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-medium px-2.5 py-1 rounded-full">
+        
+        {/* Category Badge */}
+        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-medium px-2.5 py-1 rounded-full z-10">
           {item.category}
         </div>
+
+        {/* Featured Badge */}
         {isBoosted(item) && (
-          <div className="absolute top-2 right-2 bg-yellow-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">
+          <div className="absolute top-2 right-2 bg-yellow-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow z-10">
             FEATURED
           </div>
         )}
+
+        {/* Heart Save Button */}
+        <button
+          onClick={toggleSave}
+          className="absolute bottom-3 right-3 z-20 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md cursor-pointer hover:scale-110 transition-transform"
+          title={isSaved ? "Remove from saved" : "Save item"}
+        >
+          <svg 
+            className={`w-4 h-4 ${isSaved ? 'text-red-500 fill-current' : 'text-gray-500'}`} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+        </button>
       </Link>
 
       {/* Content */}

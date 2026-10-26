@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { convertImageToBase64 } from '../utils/imageUpload';
 import { isValidNgPhone } from '../utils/phone';
 import { LOCATIONS, CATEGORIES, CONDITIONS, BOOST_PLANS } from '../utils/constants';
 import { startBoostPayment } from '../utils/boost';
 import { Upload, X, AlertCircle, ShoppingBag, Phone, Zap } from 'lucide-react';
+import { uploadImageToCloudinary } from '../utils/imageUpload';
 
 const MAX_PHOTOS = 3;
 const MAX_TOTAL_SIZE = 850000; // Firestore document limit is about 1MB
@@ -44,29 +44,34 @@ export default function PostItem() {
     setWhatsapp((prev) => prev || userProfile.whatsappNumber || '');
   }, [userProfile]);
 
-  // Pick photos -> shrink them -> keep them in state
+  // Handle Image Selection & Upload to Cloudinary
   const handleImageChange = async (e) => {
     const files = Array.from(e.target.files);
     e.target.value = ''; // lets the user pick the same photo again
     if (files.length === 0) return;
 
-    if (images.length + files.length > MAX_PHOTOS) {
-      return setError(`You can upload a maximum of ${MAX_PHOTOS} photos.`);
+    if (images.length + files.length > 3) {
+      return setError(`You can upload a maximum of 3 photos.`);
     }
+
     for (const file of files) {
-      if (!file.type.startsWith('image/')) return setError('Please choose photo files only.');
-      if (file.size > 15 * 1024 * 1024) return setError('Each photo must be less than 15MB.');
+      if (!file.type.startsWith('image/')) return setError('Please choose image files only.');
+      if (file.size > 5 * 1024 * 1024) return setError('Each photo must be less than 5MB.');
     }
 
     setError('');
-    setProcessing(true);
+    setLoading(true);
     try {
-      const compressed = await Promise.all(files.map((file) => convertImageToBase64(file)));
-      setImages((prev) => [...prev, ...compressed]);
+      const uploadedUrls = await Promise.all(
+        files.map(async (file) => {
+          return await uploadImageToCloudinary(file);
+        })
+      );
+      setImages((prev) => [...prev, ...uploadedUrls]);
     } catch (err) {
-      setError(err.message || 'Failed to process photos.');
+      setError(err.message || 'Failed to upload photos.');
     } finally {
-      setProcessing(false);
+      setLoading(false);
     }
   };
 
@@ -78,7 +83,7 @@ export default function PostItem() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentUser) return navigate('/login');
-    if (processing) return setError('Please wait, photos are still loading.');
+    if (loading) return setError('Please wait, photos are still loading.');
     if (images.length === 0) return setError('Please upload at least 1 photo of your item.');
     if (!isValidNgPhone(whatsapp)) return setError('Enter a valid WhatsApp number, e.g. 08123456789.');
     if (Number(price) <= 0) return setError('Enter a price greater than 0.');
