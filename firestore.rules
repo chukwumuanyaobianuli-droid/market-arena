@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users: only you can read or edit your own profile.
+    // Nobody can make themselves admin or verified from the browser.
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.data.role == 'user'
+                    && request.resource.data.isVerified == false;
+      allow update: if request.auth != null && request.auth.uid == uid
+                    && request.resource.data.role == resource.data.role
+                    && request.resource.data.isVerified == resource.data.isVerified;
+      allow delete: if false;
+    }
+
+    // Listings: everyone can read. Only the seller can post, edit or delete.
+    match /listings/{listingId} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.sellerId == request.auth.uid
+                    && request.resource.data.isFeatured == false
+                    && request.resource.data.status == 'active';
+      allow update: if request.auth != null
+                    && resource.data.sellerId == request.auth.uid
+                    && request.resource.data.sellerId == resource.data.sellerId;
+      allow delete: if request.auth != null
+                    && resource.data.sellerId == request.auth.uid;
+    }
+
+    // Payment records: you can add and read only your own.
+    match /transactions/{txId} {
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null
+                    && resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+  }
+}
