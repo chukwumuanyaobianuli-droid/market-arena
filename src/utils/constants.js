@@ -21,15 +21,17 @@ export const LOCATIONS = [
   'Goldie',
   'Effio Ette'
 ];
+// src/utils/constants.js
+
 export const CATEGORIES = [
-  'Hostels & Rooms', // <-- Add this first!
-  'Phones & Laptops',
-  'Electronics',
-  'Fashion & Wear',
-  'Hostels & Accommodation',
-  'Books & Study Materials',
-  'Services',
-  'Others'
+  "Hostels & Rooms",
+  "Phones & Laptops",
+  "Electronics",
+  "Fashion & Wear",
+  "Books & Study Materials",
+  "Vehicles",
+  "Services",
+  "Others"
 ];
 
 
