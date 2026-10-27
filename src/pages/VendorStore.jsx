@@ -23,17 +23,18 @@ export default function VendorStore() {
       try {
         setLoading(true);
 
-        // 1. Fetch seller profile info
-        const sellerDocRef = doc(db, 'users', sellerId);
-        const sellerSnap = await getDoc(sellerDocRef);
-        
-        if (sellerSnap.exists() && isMounted) {
-          setSeller(sellerSnap.data());
+        // 1. Public profile (only exists for admin-verified sellers)
+        let profile = null;
+        try {
+          const profileSnap = await getDoc(doc(db, 'publicProfiles', sellerId));
+          if (profileSnap.exists()) profile = profileSnap.data();
+        } catch (e) {
+          // no public profile, that is fine
         }
 
         // 2. Fetch all active listings by this seller
         const q = query(
-          collection(db, 'items'),
+          collection(db, 'listings'),
           where('sellerId', '==', sellerId)
         );
         const querySnap = await getDocs(q);
@@ -44,13 +45,16 @@ export default function VendorStore() {
             .filter((item) => item.status !== 'sold');
           setListings(items);
 
-          // Fallback seller info from listing if user doc is missing
-          if (!sellerSnap.exists() && items.length > 0) {
+          // Seller info comes from the listings, plus the public profile if there is one
+          if (items.length > 0) {
             setSeller({
-              displayName: items[0].sellerName || 'Verified Vendor',
-              location: items[0].location || 'Calabar',
+              displayName: profile?.displayName || items[0].sellerName || 'Vendor',
+              location: profile?.location || items[0].location || 'Calabar',
               whatsappNumber: items[0].whatsappNumber || '',
+              isVerified: !!profile?.isVerified,
             });
+          } else if (profile) {
+            setSeller(profile);
           }
         }
       } catch (err) {
@@ -112,9 +116,11 @@ export default function VendorStore() {
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="text-xl sm:text-2xl font-black text-white">{vendorName}</h1>
-                <span className="bg-[#22C55E] text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3" /> Verified
-                </span>
+                {seller?.isVerified && (
+                  <span className="bg-[#22C55E] text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" /> Verified
+                  </span>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-4 text-xs text-emerald-100/90 mt-2 font-medium">

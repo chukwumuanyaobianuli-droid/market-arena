@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { optimizeImage } from '../utils/imageUpload';
 import { db } from '../firebase/firebase';
 import { addDoc, collection, doc, getDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
-import { MapPin, Phone, MessageCircle, ArrowLeft, ShieldAlert, AlertCircle, Eye, Share2 } from 'lucide-react';
+import { MapPin, Phone, MessageCircle, ArrowLeft, ShieldAlert, AlertCircle, Eye, Share2, Pencil } from 'lucide-react';
 import { whatsappLink, telLink } from '../utils/phone';
 
 export default function ItemDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
 
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,10 +34,17 @@ export default function ItemDetails() {
           const itemData = { id: docSnap.id, ...docSnap.data() };
           if (isMounted) setItem(itemData);
 
-          // Increment view count in Firestore
-          await updateDoc(docRef, {
-            views: increment(1)
-          });
+          // Count one view per visitor per session (not the owner)
+          try {
+            const viewedKey = `viewed_${id}`;
+            const isOwner = currentUser?.uid && currentUser.uid === itemData.sellerId;
+            if (!isOwner && !sessionStorage.getItem(viewedKey)) {
+              sessionStorage.setItem(viewedKey, '1');
+              updateDoc(docRef, { views: increment(1) }).catch(() => {});
+            }
+          } catch {
+            // storage blocked: skip counting
+          }
         } else {
           if (isMounted) setItem(null);
         }
@@ -67,13 +77,18 @@ export default function ItemDetails() {
   const handleReport = async (e) => {
     e.preventDefault();
     if (!reportReason.trim()) return;
+    if (!currentUser) {
+      alert('Please log in to report a listing.');
+      return;
+    }
 
     try {
       await addDoc(collection(db, 'reports'), {
         itemId: id,
         itemTitle: item?.title || 'Item',
         sellerId: item?.sellerId || '',
-        reason: reportReason,
+        reporterId: currentUser.uid,
+        reason: reportReason.trim().slice(0, 500),
         createdAt: serverTimestamp(),
       });
 
@@ -130,7 +145,7 @@ export default function ItemDetails() {
               <div className="absolute top-3 left-3 z-10 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow">SOLD</div>
             )}
             <img 
-              src={item.images?.[activeImageIndex] || item.imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30'} 
+              src={optimizeImage(item.images?.[activeImageIndex] || item.imageUrl, 900) || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30'} 
               alt={item.title} 
               className="w-full h-full object-cover"
             />
@@ -145,7 +160,7 @@ export default function ItemDetails() {
                   onClick={() => setActiveImageIndex(idx)}
                   className={`w-16 h-16 rounded-lg overflow-hidden border-2 shrink-0 cursor-pointer ${activeImageIndex === idx ? 'border-[#22C55E]' : 'border-transparent'}`}
                 >
-                  <img src={img} alt="thumb" className="w-full h-full object-cover" />
+                  <img src={optimizeImage(img, 160)} alt="thumb" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -199,7 +214,7 @@ export default function ItemDetails() {
               </div>
               <div>
                 <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Seller</p>
-                <p className="text-sm font-bold text-gray-800">{item.sellerName || 'Verified Seller'}</p>
+                <Link to={`/vendor/${item.sellerId}`} className="text-sm font-bold text-gray-800 hover:text-[#22C55E]">{item.sellerName || 'Seller'}</Link>
               </div>
             </div>
 
@@ -245,7 +260,6 @@ export default function ItemDetails() {
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={handleWhatsAppClick}
                   className="w-full flex items-center justify-center space-x-2 bg-emerald-50 hover:bg-emerald-100 text-[#064E3B] border border-emerald-200 text-xs font-bold py-2.5 px-4 rounded-xl transition-colors cursor-pointer"
                 >
                   <Share2 className="w-4 h-4 text-[#22C55E]" />
@@ -266,7 +280,14 @@ export default function ItemDetails() {
 
       {/* Report Listing Button & Modal */}
       <div className="mt-8 pt-4 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
-        <span>Listing ID: {id}</span>
+        {currentUser?.uid === item.sellerId ? (
+          <Link to={`/edit/${id}`} className="text-[#064E3B] hover:text-[#22C55E] font-semibold flex items-center space-x-1">
+            <Pencil className="w-4 h-4" />
+            <span>Edit listing</span>
+          </Link>
+        ) : (
+          <span>Listing ID: {id}</span>
+        )}
         <button
           onClick={() => setShowReportModal(true)}
           className="text-red-600 hover:text-red-700 font-semibold flex items-center space-x-1 cursor-pointer"

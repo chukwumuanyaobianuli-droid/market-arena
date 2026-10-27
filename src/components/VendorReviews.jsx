@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
+import { useAuth } from '../context/AuthContext';
 import { Star, MessageSquare, CheckCircle2 } from 'lucide-react';
 
 export default function VendorReviews({ vendorId, vendorName }) {
@@ -11,6 +12,12 @@ export default function VendorReviews({ vendorId, vendorName }) {
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const { currentUser, userProfile } = useAuth();
+
+  // Fill the name from the profile
+  useEffect(() => {
+    if (userProfile?.displayName) setBuyerName((prev) => prev || userProfile.displayName);
+  }, [userProfile]);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -21,7 +28,6 @@ export default function VendorReviews({ vendorId, vendorName }) {
       }
 
       try {
-        console.log('Fetching reviews for vendorId:', vendorId);
         const q = query(
           collection(db, 'reviews'),
           where('vendorId', '==', vendorId)
@@ -45,10 +51,22 @@ export default function VendorReviews({ vendorId, vendorName }) {
 
   const avgRating = reviews.length > 0 
     ? (reviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0) / reviews.length).toFixed(1)
-    : '5.0';
+    : null;
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
+    if (!currentUser) {
+      alert('Please log in to leave a review.');
+      return;
+    }
+    if (currentUser.uid === vendorId) {
+      alert('You cannot review your own store.');
+      return;
+    }
+    if (reviews.some((r) => r.reviewerId === currentUser.uid)) {
+      alert('You have already reviewed this vendor.');
+      return;
+    }
     if (!vendorId) {
       alert('Error: Vendor ID is missing.');
       return;
@@ -60,16 +78,20 @@ export default function VendorReviews({ vendorId, vendorName }) {
 
     setSubmitting(true);
     try {
-      const docRef = await addDoc(collection(db, 'reviews'), {
+      // One review per person per vendor (the id makes sure of it)
+      const reviewRef = doc(db, 'reviews', `${vendorId}_${currentUser.uid}`);
+      await setDoc(reviewRef, {
         vendorId,
-        buyerName: buyerName.trim(),
-        rating: Number(rating),
-        comment: comment.trim(),
+        reviewerId: currentUser.uid,
+        buyerName: buyerName.trim().slice(0, 40),
+        rating: Math.min(5, Math.max(1, Number(rating))),
+        comment: comment.trim().slice(0, 500),
         createdAt: serverTimestamp(),
       });
 
       const newReview = {
-        id: docRef.id,
+        id: reviewRef.id,
+        reviewerId: currentUser.uid,
         buyerName: buyerName.trim(),
         rating: Number(rating),
         comment: comment.trim(),
@@ -108,7 +130,7 @@ export default function VendorReviews({ vendorId, vendorName }) {
             Vendor Reviews & Ratings
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Verified feedback from buyers who dealt with {vendorName || 'this vendor'}.
+            Feedback from buyers about {vendorName || 'this vendor'}.
           </p>
         </div>
 
@@ -122,12 +144,25 @@ export default function VendorReviews({ vendorId, vendorName }) {
             ))}
           </div>
           <div className="text-sm font-black text-[#064E3B]">
-            {avgRating} <span className="text-xs font-normal text-gray-500">({reviews.length} reviews)</span>
+            {avgRating ?? 'No ratings yet'} <span className="text-xs font-normal text-gray-500">({reviews.length} reviews)</span>
           </div>
         </div>
       </div>
 
       {/* Review Form */}
+      {!currentUser ? (
+        <p className="mt-6 text-xs text-center text-gray-500 bg-gray-50 p-4 rounded-xl border border-gray-100">
+          Log in to leave a review.
+        </p>
+      ) : currentUser.uid === vendorId ? (
+        <p className="mt-6 text-xs text-center text-gray-500 bg-gray-50 p-4 rounded-xl border border-gray-100">
+          This is your store. You cannot review yourself.
+        </p>
+      ) : reviews.some((r) => r.reviewerId === currentUser.uid) ? (
+        <p className="mt-6 text-xs text-center text-gray-500 bg-gray-50 p-4 rounded-xl border border-gray-100">
+          You have already reviewed this vendor. Thank you!
+        </p>
+      ) : (
       <form onSubmit={handleSubmitReview} className="mt-6 bg-gray-50/60 p-4 rounded-xl border border-gray-100">
         <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-3">Leave a Review for {vendorName}</h4>
         
@@ -187,6 +222,7 @@ export default function VendorReviews({ vendorId, vendorName }) {
           {submitting ? 'Posting Review...' : 'Post Review'}
         </button>
       </form>
+      )}
 
       {/* Reviews List */}
       <div className="mt-6 space-y-4">
