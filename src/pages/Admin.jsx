@@ -1,37 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
+import { useAuth } from '../context/AuthContext';
 import { ShieldCheck, ShieldAlert, Trash2, Search, ExternalLink } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { isBoosted } from '../utils/constants';
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState('listings'); // 'listings' | 'users'
+  const { userProfile } = useAuth();
+  const isAdmin = userProfile?.role === 'admin'; // only admins can use this page
+  const [activeTab, setActiveTab] = useState('listings'); // 'listings' | 'users' | 'reports'
   const [listings, setListings] = useState([]);
   const [users, setUsers] = useState([]);
+  const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch all listings and users safely
+  // Fetch listings, users and reports
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch from 'items' collection
-      const itemsSnap = await getDocs(collection(db, 'items'));
-      let fetchedItems = itemsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // 1. Newest listings (max 100, to save free reads)
+      const listingsSnap = await getDocs(query(collection(db, 'listings'), orderBy('createdAt', 'desc'), limit(100)));
+      setListings(listingsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
-      // If 'items' is empty, try fetching from 'listings' collection as fallback
-      if (fetchedItems.length === 0) {
-        const listingsSnap = await getDocs(collection(db, 'listings'));
-        fetchedItems = listingsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      }
-      setListings(fetchedItems);
+      // 2. Users (max 200)
+      const usersSnap = await getDocs(query(collection(db, 'users'), limit(200)));
+      setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
-      // 2. Fetch Users
-      const usersSnap = await getDocs(collection(db, 'users'));
-      const fetchedUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setUsers(fetchedUsers);
-
-      console.log('Admin loaded items:', fetchedItems.length, 'users:', fetchedUsers.length);
+      // 3. Reports (max 100)
+      const reportsSnap = await getDocs(query(collection(db, 'reports'), limit(100)));
+      setReports(reportsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (err) {
       console.error('Error fetching admin data:', err);
     } finally {
@@ -40,16 +39,23 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (isAdmin) fetchData();
+  }, [isAdmin]);
 
   // Action: Toggle Verified Seller Badge on User Doc
   const toggleUserVerification = async (userId, currentStatus) => {
     try {
+      const target = users.find((u) => u.id === userId) || {};
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, {
         isVerified: !currentStatus
       });
+      // Public copy, so buyers can see the badge on the vendor store
+      await setDoc(doc(db, 'publicProfiles', userId), {
+        isVerified: !currentStatus,
+        displayName: target.displayName || '',
+        location: target.location || ''
+      }, { merge: true });
       setUsers(users.map(u => u.id === userId ? { ...u, isVerified: !currentStatus } : u));
       alert(`User verification status updated to: ${!currentStatus ? 'VERIFIED' : 'UNVERIFIED'}`);
     } catch (err) {
@@ -63,13 +69,23 @@ export default function Admin() {
     if (!window.confirm('Are you sure you want to delete this listing permanently?')) return;
 
     try {
-      // Try deleting from 'items' first, then 'listings'
-      await deleteDoc(doc(db, 'items', itemId)).catch(() => deleteDoc(doc(db, 'listings', itemId)));
+      await deleteDoc(doc(db, 'listings', itemId));
       setListings(listings.filter(item => item.id !== itemId));
       alert('Listing deleted successfully!');
     } catch (err) {
       console.error('Error deleting listing:', err);
       alert('Failed to delete listing.');
+    }
+  };
+
+  // Action: Dismiss a report
+  const handleDeleteReport = async (reportId) => {
+    try {
+      await deleteDoc(doc(db, 'reports', reportId));
+      setReports(reports.filter((r) => r.id !== reportId));
+    } catch (err) {
+      console.error('Error deleting report:', err);
+      alert('Failed to dismiss report.');
     }
   };
 
@@ -83,6 +99,9 @@ export default function Admin() {
     u.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Not an admin? Go home.
+  if (!isAdmin) return <Navigate to="/" replace />;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -146,6 +165,16 @@ export default function Admin() {
           >
             Manage Users ({users.length})
           </button>
+          <button
+            onClick={() => setActiveTab('reports')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'reports'
+                ? 'bg-[#064E3B] text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Reports ({reports.length})
+          </button>
         </div>
 
         {/* Search Input */}
@@ -200,7 +229,7 @@ export default function Admin() {
                         </Link>
                       </td>
                       <td className="p-4">
-                        {item.isBoosted ? (
+                        {isBoosted(item) ? (
                           <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
                             ⚡ Boosted
                           </span>
@@ -279,6 +308,39 @@ export default function Admin() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 3: Reports */}
+      {activeTab === 'reports' && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          {loading ? (
+            <p className="text-center text-xs text-gray-400 py-12">Loading reports...</p>
+          ) : reports.length === 0 ? (
+            <p className="text-center text-xs text-gray-400 py-12">No reports. All clear.</p>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {reports.map((r) => (
+                <div key={r.id} className="p-4 flex items-start justify-between gap-3">
+                  <div>
+                    <Link
+                      to={`/item/${r.itemId || r.listingId}`}
+                      className="font-bold text-xs text-gray-900 hover:text-[#22C55E]"
+                    >
+                      {r.itemTitle || r.listingTitle || 'Listing'}
+                    </Link>
+                    <p className="text-xs text-gray-600 mt-1">{r.reason}</p>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteReport(r.id)}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer shrink-0"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
