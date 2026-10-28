@@ -2,18 +2,46 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Icons & app install -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Market Arena - buy and sell phones, fashion, hostel gear and services around UNICAL, UNICROSS and Calabar." />
     <meta name="theme-color" content="#16a34a" />
+    <meta name="apple-mobile-web-app-title" content="Market Arena" />
+
+    <!-- Title & description -->
     <title>Market Arena - Buy &amp; Sell in Calabar</title>
-    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <meta name="description" content="Market Arena - buy and sell phones, fashion, hostel gear and services around UNICAL, UNICROSS and Calabar." />
+
+    <!-- Link preview (WhatsApp, Facebook, X) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Market Arena" />
+    <meta property="og:title" content="Market Arena - Buy &amp; Sell in Calabar" />
+    <meta property="og:description" content="Buy and sell phones, fashion, hostels and services around UNICAL and Calabar." />
+    <meta property="og:url" content="https://market-arena.netlify.app" />
+    <meta property="og:image" content="https://market-arena.netlify.app/logo.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Market Arena logo" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Market Arena - Buy &amp; Sell in Calabar" />
+    <meta name="twitter:description" content="Buy and sell phones, fashion, hostels and services around UNICAL and Calabar." />
+    <meta name="twitter:image" content="https://market-arena.netlify.app/logo.png" />
+
+    <!-- Faster connections to the services the app uses -->
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+    <link rel="dns-prefetch" href="https://js.paystack.co" />
+
+    <!-- Paystack loads in the background so it does not slow the page -->
+    <script src="https://js.paystack.co/v1/inline.js" defer></script>
   </head>
   <body>
+    <noscript>Please turn on JavaScript to use Market Arena.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
