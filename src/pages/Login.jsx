@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { isValidNgPhone } from '../utils/phone';
-import { Lock, Mail, User, Phone, MapPin, AlertCircle } from 'lucide-react';
+import { Lock, Mail, User, Phone, MapPin, AlertCircle, FileText } from 'lucide-react';
 import { sendEmailVerification } from 'firebase/auth';
 
 export default function Login() {
@@ -294,8 +294,19 @@ export default function Login() {
           </button>
         </form>
 
+        {/* Visible Terms & Policies Direct Link */}
+        <div className="mt-5 text-center pt-4 border-t border-gray-100">
+          <Link 
+            to="/policies" 
+            className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-200/80 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>View Terms & Policies</span>
+          </Link>
+        </div>
+
         {/* Toggle between Signup and Login */}
-        <div className="text-center mt-6 text-xs text-gray-500">
+        <div className="text-center mt-3 text-xs text-gray-500">
           {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
           <button
             type="button"

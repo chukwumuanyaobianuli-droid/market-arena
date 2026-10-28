@@ -13,6 +13,7 @@ import Admin from './pages/Admin';
 import EditItem from './pages/EditItem';
 import Policies from './pages/Policies';
 import InstallPromptModal from './components/InstallPromptModal';
+import Favorites from './pages/Favorites';
 
 // Go to top of the page every time the route changes
 function ScrollToTop() {
@@ -42,19 +43,20 @@ export default function App() {
       <div className="min-h-screen flex flex-col justify-between bg-gray-50 font-sans text-gray-900">
         <div>
           <Navbar />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/post-item" element={<PostItem />} />
-            <Route path="/item/:id" element={<ItemDetails />} />
-            <Route path="/my-listings" element={<MyListings />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/vendor/:sellerId" element={<VendorStore />} />
-            <Route path="/edit/:id" element={<EditItem />} />
-            <Route path="/policies" element={<Policies />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+         <Routes>
+  <Route path="/" element={<Home />} />
+  <Route path="/login" element={<Login />} />
+  <Route path="/profile" element={<Profile />} />
+  <Route path="/favorites" element={<Favorites />} /> {/* 👈 HERE */}
+  <Route path="/post-item" element={<PostItem />} />
+  <Route path="/item/:id" element={<ItemDetails />} />
+  <Route path="/my-listings" element={<MyListings />} />
+  <Route path="/admin" element={<Admin />} />
+  <Route path="/vendor/:sellerId" element={<VendorStore />} />
+  <Route path="/edit/:id" element={<EditItem />} />
+  <Route path="/policies" element={<Policies />} />
+  <Route path="*" element={<NotFound />} />
+</Routes>
         </div>
         
         {/* PWA Install Modal lives safely outside Routes */}

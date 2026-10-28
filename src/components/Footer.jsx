@@ -1,43 +1,55 @@
 import React from 'react';
-import { ShieldAlert, CheckCircle, MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Shield, FileText } from 'lucide-react';
 
 export default function Footer() {
+  const { currentUser } = useAuth();
+
+  // Replace with your actual admin UID or check your admin logic
+  // (You can also check if currentUser?.email === 'your-admin-email@gmail.com')
+  const ADMIN_UID = 'YOUR_ADMIN_UID_HERE'; // Or adjust based on how your Admin.jsx checks admin
+  const isAdmin = currentUser && currentUser.uid === ADMIN_UID;
+
   return (
-    <footer className="bg-gray-900 text-gray-300 mt-12 border-t border-gray-800">
-      
-      {/* Calabar Safety Tips Banner */}
-      <div className="bg-gray-800 py-6 px-4 border-b border-gray-700">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center space-x-2 text-yellow-400 font-bold mb-3">
-            <ShieldAlert className="w-5 h-5" />
-            <span>Safety Tips for Calabar Buyers & Sellers</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-gray-300">
-            <div className="flex items-start space-x-2">
-              <CheckCircle className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
-              <span>Meet in safe public places like UNICAL Malabor Square, Marian Mall, or Watt Market main entrance.</span>
-            </div>
-            <div className="flex items-start space-x-2">
-              <CheckCircle className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
-              <span>Always inspect and test gadgets or items carefully before making any transfer or cash payment.</span>
-            </div>
-            <div className="flex items-start space-x-2">
-              <CheckCircle className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
-              <span>Never send money in advance for delivery or item reservation to unknown sellers.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Footer Links */}
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-400">
+    <footer className="bg-white border-t border-gray-200 mt-auto py-8 px-4 text-xs text-gray-500">
+      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        
+        {/* Left: Dynamic Copyright / Admin Backdoor */}
         <div className="flex items-center space-x-1">
-          <MapPin className="w-4 h-4 text-brand-500" />
-          <span>Built for UNICAL, UNICROSS & Calabar Metropolis</span>
+          <span>Copyright</span>
+          {isAdmin ? (
+            <Link 
+              to="/admin" 
+              title="Admin Portal" 
+              className="font-bold text-[#22C55E] hover:underline cursor-pointer px-1 bg-emerald-50 rounded"
+            >
+              ©
+            </Link>
+          ) : (
+            <span>©</span>
+          )}
+          <span>{new Date().getFullYear()} Market Arena. All rights reserved.</span>
         </div>
-        <p>© {new Date().getFullYear()} Market Arena. All rights reserved.</p>
-      </div>
 
+        {/* Center/Right: Policy Links for Paystack Compliance */}
+        <div className="flex flex-wrap items-center justify-center gap-4 font-medium text-gray-600">
+          <Link to="/policies" className="hover:text-[#22C55E] transition-colors flex items-center gap-1">
+            <FileText className="w-3.5 h-3.5" />
+            <span>Terms & Policies</span>
+          </Link>
+          <span className="text-gray-300">•</span>
+          <Link to="/policies#privacy" className="hover:text-[#22C55E] transition-colors">
+            Privacy Policy
+          </Link>
+          <span className="text-gray-300">•</span>
+          <Link to="/policies#safety" className="hover:text-[#22C55E] transition-colors flex items-center gap-1">
+            <Shield className="w-3.5 h-3.5" />
+            <span>Safety Guidelines</span>
+          </Link>
+        </div>
+
+      </div>
     </footer>
   );
 }

@@ -3,8 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { optimizeImage } from '../utils/imageUpload';
 import { db } from '../firebase/firebase';
-import { addDoc, collection, doc, getDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
-import { MapPin, Phone, MessageCircle, ArrowLeft, ShieldAlert, AlertCircle, Eye, Share2, Pencil } from 'lucide-react';
+import { addDoc, collection, doc, getDoc, updateDoc, increment, serverTimestamp, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { MapPin, Phone, MessageCircle, ArrowLeft, ShieldAlert, AlertCircle, Eye, Share2, Pencil, Heart } from 'lucide-react';
 import { whatsappLink, telLink } from '../utils/phone';
 import { createNotification } from '../utils/notifications';
 
@@ -17,10 +17,61 @@ export default function ItemDetails() {
   const [loading, setLoading] = useState(true);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
+  // Favorites state
+  const [isFavorite, setIsFavorite] = useState(false);
+
   // State for reporting modal
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportSubmitted, setReportSubmitted] = useState(false);
+
+  // Check if item is already in user's saved items
+  useEffect(() => {
+    if (!currentUser || !id) return;
+    const checkFavoriteStatus = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userDoc.exists()) {
+          const saved = userDoc.data().savedItemIds || [];
+          setIsFavorite(saved.includes(id));
+        }
+      } catch (e) {
+        console.error('Error checking saved status:', e);
+      }
+    };
+    checkFavoriteStatus();
+  }, [currentUser, id]);
+
+  // Handle Save / Favorite toggle
+  const handleToggleFavorite = async () => {
+    if (!currentUser) {
+      alert('Please log in to save items.');
+      return;
+    }
+
+    const userRef = doc(db, 'users', currentUser.uid);
+    try {
+      if (isFavorite) {
+        await updateDoc(userRef, { savedItemIds: arrayRemove(id) });
+        setIsFavorite(false);
+      } else {
+        await updateDoc(userRef, { savedItemIds: arrayUnion(id) });
+        setIsFavorite(true);
+
+        // 🔔 Send notification to seller
+        if (item?.sellerId && item.sellerId !== currentUser.uid) {
+          await createNotification({
+            recipientId: item.sellerId,
+            senderName: userProfile?.displayName || currentUser.displayName || 'Someone',
+            itemTitle: item.title,
+            type: 'save'
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
+  };
 
   // Load item & increment view count atomically
   useEffect(() => {
@@ -138,14 +189,28 @@ export default function ItemDetails() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       
-      {/* Back Button */}
-      <button 
-        onClick={() => navigate(-1)} 
-        className="flex items-center space-x-1 text-xs font-semibold text-gray-600 hover:text-[#064E3B] mb-4 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-sm w-fit cursor-pointer"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Back</span>
-      </button>
+      {/* Top Header Bar: Back & Favorite Buttons */}
+      <div className="flex items-center justify-between mb-4">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="flex items-center space-x-1 text-xs font-semibold text-gray-600 hover:text-[#064E3B] bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-sm w-fit cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back</span>
+        </button>
+
+        <button
+          onClick={handleToggleFavorite}
+          className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold ${
+            isFavorite 
+              ? 'bg-red-50 text-red-600 border-red-200' 
+              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+          }`}
+        >
+          <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-600 text-red-600' : ''}`} />
+          <span>{isFavorite ? 'Saved' : 'Save Item'}</span>
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
         
