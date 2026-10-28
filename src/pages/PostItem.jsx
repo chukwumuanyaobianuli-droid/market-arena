@@ -8,6 +8,7 @@ import { LOCATIONS, CATEGORIES, CONDITIONS, BOOST_PLANS } from '../utils/constan
 import { startBoostPayment } from '../utils/boost';
 import { Upload, X, AlertCircle, ShoppingBag, Phone, Zap } from 'lucide-react';
 import { uploadImageToCloudinary } from '../utils/imageUpload';
+import { sendEmailVerification } from 'firebase/auth';
 
 const MAX_PHOTOS = 3;
 
@@ -30,6 +31,7 @@ export default function PostItem() {
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [verifyingMsg, setVerifyingMsg] = useState('');
 
   // Not logged in? Go to login straight away
   useEffect(() => {
@@ -78,10 +80,30 @@ export default function PostItem() {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Resend verification email helper
+  const handleResendVerification = async () => {
+    try {
+      setVerifyingMsg('');
+      if (currentUser && !currentUser.emailVerified) {
+        await sendEmailVerification(currentUser);
+        setVerifyingMsg('Verification link sent again! Check your inbox/spam.');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Could not send verification email. Try again later.');
+    }
+  };
+
   // Submit listing to Firestore
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentUser) return navigate('/login');
+
+    // 🛑 CUT FAKE ACCOUNTS: Block unverified emails from posting
+    if (!currentUser.emailVerified) {
+      return setError('Please verify your email address before posting an item. Check your inbox for the link.');
+    }
+
     if (processing) return setError('Please wait, photos are still uploading.');
     if (images.length === 0) return setError('Please upload at least 1 photo of your item.');
     if (!isValidNgPhone(whatsapp)) return setError('Enter a valid WhatsApp number, e.g. 08123456789.');
@@ -155,6 +177,27 @@ export default function PostItem() {
             <p className="text-xs text-gray-500">Reach buyers across UNICAL and Calabar metropolis</p>
           </div>
         </div>
+
+        {/* Unverified Email Warning Banner */}
+        {currentUser && !currentUser.emailVerified && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+            <div className="flex items-center space-x-2 text-amber-800 font-bold text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Email Verification Required to Post</span>
+            </div>
+            <p className="text-xs text-amber-700">
+              To keep Market Arena safe from fake accounts, please check your inbox and click the verification link sent to <strong>{currentUser.email}</strong> before you can publish listings.
+            </p>
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+            >
+              Resend Verification Link
+            </button>
+            {verifyingMsg && <p className="text-xs text-emerald-600 font-medium">{verifyingMsg}</p>}
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl flex items-center space-x-2">

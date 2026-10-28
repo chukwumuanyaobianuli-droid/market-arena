@@ -6,11 +6,12 @@ import { db } from '../firebase/firebase';
 import { addDoc, collection, doc, getDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { MapPin, Phone, MessageCircle, ArrowLeft, ShieldAlert, AlertCircle, Eye, Share2, Pencil } from 'lucide-react';
 import { whatsappLink, telLink } from '../utils/phone';
+import { createNotification } from '../utils/notifications';
 
 export default function ItemDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
 
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -60,17 +61,27 @@ export default function ItemDetails() {
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, currentUser]);
 
-  // Handle tracking WhatsApp clicks
+  // Handle tracking WhatsApp clicks & sending real-time notification to seller
   const handleWhatsAppClick = async () => {
     try {
       const docRef = doc(db, 'listings', id);
       await updateDoc(docRef, {
         whatsappClicks: increment(1)
       });
+
+      // 🔔 Send inquiry notification to the seller if the buyer is not the owner
+      if (item?.sellerId && currentUser?.uid !== item.sellerId) {
+        await createNotification({
+          recipientId: item.sellerId,
+          senderName: userProfile?.displayName || currentUser?.displayName || 'A buyer',
+          itemTitle: item.title,
+          type: 'inquiry'
+        });
+      }
     } catch (err) {
-      console.error('Error tracking WhatsApp click:', err);
+      console.error('Error tracking WhatsApp click or creating notification:', err);
     }
   };
 

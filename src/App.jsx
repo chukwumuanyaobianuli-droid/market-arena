@@ -10,8 +10,9 @@ import ItemDetails from './pages/ItemDetails';
 import MyListings from './pages/MyListings';
 import VendorStore from './pages/VendorStore';
 import Admin from './pages/Admin';
-
-   import EditItem from './pages/EditItem';
+import EditItem from './pages/EditItem';
+import Policies from './pages/Policies';
+import InstallPromptModal from './components/InstallPromptModal';
 
 // Go to top of the page every time the route changes
 function ScrollToTop() {
@@ -48,14 +49,17 @@ export default function App() {
             <Route path="/post-item" element={<PostItem />} />
             <Route path="/item/:id" element={<ItemDetails />} />
             <Route path="/my-listings" element={<MyListings />} />
-            <Route path="*" element={<NotFound />} />
-            
             <Route path="/admin" element={<Admin />} />
-               <Route path="/vendor/:sellerId" element={<VendorStore />} />
-
-   <Route path="/edit/:id" element={<EditItem />} />
+            <Route path="/vendor/:sellerId" element={<VendorStore />} />
+            <Route path="/edit/:id" element={<EditItem />} />
+            <Route path="/policies" element={<Policies />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </div>
+        
+        {/* PWA Install Modal lives safely outside Routes */}
+        <InstallPromptModal />
+        
         <Footer />
       </div>
     </Router>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { isValidNgPhone } from '../utils/phone';
 import { Lock, Mail, User, Phone, MapPin, AlertCircle } from 'lucide-react';
+import { sendEmailVerification } from 'firebase/auth';
 
 export default function Login() {
   const [isSignup, setIsSignup] = useState(false);
@@ -58,6 +59,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setMessage('');
 
     if (isSignup) {
       if (!displayName || !whatsappNumber) {
@@ -74,11 +76,17 @@ export default function Login() {
     try {
       setLoading(true);
       if (isSignup) {
-        await signup(email, password, displayName, whatsappNumber, location);
+        const userCredential = await signup(email, password, displayName, whatsappNumber, location);
+        // Send email verification to cut fake accounts
+        if (userCredential?.user) {
+          await sendEmailVerification(userCredential.user);
+        }
+        setMessage('Account created successfully! Please check your email inbox to verify your account.');
+        setTimeout(() => navigate('/'), 3000); // Give them 3 seconds to read the message before going home
       } else {
         await login(email, password);
+        navigate('/');
       }
-      navigate('/');
     } catch (err) {
       console.error(err);
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
@@ -294,6 +302,7 @@ export default function Login() {
             onClick={() => {
               setIsSignup(!isSignup);
               setError('');
+              setMessage('');
             }}
             className="text-[#16a34a] font-bold hover:underline cursor-pointer"
           >
