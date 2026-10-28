@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase/firebase';
-import { doc, getDoc, collection, getDocs, query, where, documentId } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { Heart, MapPin, ArrowLeft } from 'lucide-react';
 import { optimizeImage } from '../utils/imageUpload';
 
@@ -20,7 +20,6 @@ export default function Favorites() {
 
     const fetchSavedItems = async () => {
       try {
-        // 1. Get user document to read savedItemIds array
         const userDocRef = doc(db, 'users', currentUser.uid);
         const userDocSnap = await getDoc(userDocRef);
 
@@ -29,22 +28,18 @@ export default function Favorites() {
           const favoriteIds = userData.savedItemIds || [];
 
           if (favoriteIds.length > 0) {
-            // Firestore 'in' query allows up to 30 IDs per batch
-            const chunks = [];
-            for (let i = 0; i < favoriteIds.length; i += 10) {
-              chunks.push(favoriteIds.slice(i, i + 10));
-            }
+            // Fetch each item individually to avoid query limit/missing doc crashes
+            const itemPromises = favoriteIds.map(async (itemId) => {
+              const itemRef = doc(db, 'listings', itemId);
+              const itemSnap = await getDoc(itemRef);
+              if (itemSnap.exists()) {
+                return { id: itemSnap.id, ...itemSnap.data() };
+              }
+              return null;
+            });
 
-            let loadedListings = [];
-            for (const chunk of chunks) {
-              const q = query(collection(db, 'listings'), where(documentId(), 'in', chunk));
-              const querySnap = await getDocs(q);
-              querySnap.forEach((docSnap) => {
-                loadedListings.push({ id: docSnap.id, ...docSnap.data() });
-              });
-            }
-
-            setSavedItems(loadedListings);
+            const results = await Promise.all(itemPromises);
+            setSavedItems(results.filter((item) => item !== null));
           } else {
             setSavedItems([]);
           }

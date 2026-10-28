@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { optimizeImage } from '../utils/imageUpload';
 import { db } from '../firebase/firebase';
-import { addDoc, collection, doc, getDoc, updateDoc, increment, serverTimestamp, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { MapPin, Phone, MessageCircle, ArrowLeft, ShieldAlert, AlertCircle, Eye, Share2, Pencil, Heart } from 'lucide-react';
 import { whatsappLink, telLink } from '../utils/phone';
 import { createNotification } from '../utils/notifications';
@@ -51,25 +51,38 @@ export default function ItemDetails() {
 
     const userRef = doc(db, 'users', currentUser.uid);
     try {
-      if (isFavorite) {
-        await updateDoc(userRef, { savedItemIds: arrayRemove(id) });
-        setIsFavorite(false);
-      } else {
-        await updateDoc(userRef, { savedItemIds: arrayUnion(id) });
-        setIsFavorite(true);
+      const userSnap = await getDoc(userRef);
 
-        // 🔔 Send notification to seller
-        if (item?.sellerId && item.sellerId !== currentUser.uid) {
-          await createNotification({
-            recipientId: item.sellerId,
-            senderName: userProfile?.displayName || currentUser.displayName || 'Someone',
-            itemTitle: item.title,
-            type: 'save'
-          });
+      if (!userSnap.exists()) {
+        // Create user document with savedItemIds if it doesn't exist yet
+        await setDoc(userRef, {
+          email: currentUser.email || '',
+          displayName: currentUser.displayName || userProfile?.displayName || 'User',
+          savedItemIds: [id]
+        }, { merge: true });
+        setIsFavorite(true);
+      } else {
+        if (isFavorite) {
+          await updateDoc(userRef, { savedItemIds: arrayRemove(id) });
+          setIsFavorite(false);
+        } else {
+          await updateDoc(userRef, { savedItemIds: arrayUnion(id) });
+          setIsFavorite(true);
+
+          // 🔔 Send notification to seller
+          if (item?.sellerId && item.sellerId !== currentUser.uid) {
+            await createNotification({
+              recipientId: item.sellerId,
+              senderName: userProfile?.displayName || currentUser.displayName || 'Someone',
+              itemTitle: item.title,
+              type: 'save'
+            });
+          }
         }
       }
     } catch (err) {
       console.error('Error toggling favorite:', err);
+      alert('Could not save item. Please check your network.');
     }
   };
 
