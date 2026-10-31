@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { optimizeImage } from '../utils/imageUpload';
 import { db } from '../firebase/firebase';
 import { addDoc, collection, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { MapPin, Phone, MessageCircle, ArrowLeft, ShieldAlert, AlertCircle, Eye, Share2, Pencil, Heart } from 'lucide-react';
+import { MapPin, Phone, MessageCircle, ArrowLeft, ShieldAlert, AlertCircle, Eye, Share2, Pencil, Heart, Store, ShieldCheck } from 'lucide-react';
 import { whatsappLink, telLink } from '../utils/phone';
 import { createNotification } from '../utils/notifications';
 
@@ -14,6 +14,7 @@ export default function ItemDetails() {
   const { currentUser, userProfile } = useAuth();
 
   const [item, setItem] = useState(null);
+  const [brandInfo, setBrandInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
@@ -24,6 +25,13 @@ export default function ItemDetails() {
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportSubmitted, setReportSubmitted] = useState(false);
+
+  // Quick edit modal states for price/details
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editPrice, setEditPrice] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [updating, setUpdating] = useState(false);
 
   // Check if item is already in user's saved items
   useEffect(() => {
@@ -54,7 +62,6 @@ export default function ItemDetails() {
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
-        // Create user document with savedItemIds if it doesn't exist yet
         await setDoc(userRef, {
           email: currentUser.email || '',
           displayName: currentUser.displayName || userProfile?.displayName || 'User',
@@ -69,7 +76,6 @@ export default function ItemDetails() {
           await updateDoc(userRef, { savedItemIds: arrayUnion(id) });
           setIsFavorite(true);
 
-          // 🔔 Send notification to seller
           if (item?.sellerId && item.sellerId !== currentUser.uid) {
             await createNotification({
               recipientId: item.sellerId,
@@ -86,7 +92,7 @@ export default function ItemDetails() {
     }
   };
 
-  // Load item & increment view count atomically
+  // Load item & brand info, and increment product view count atomically
   useEffect(() => {
     let isMounted = true;
 
@@ -97,18 +103,31 @@ export default function ItemDetails() {
 
         if (docSnap.exists()) {
           const itemData = { id: docSnap.id, ...docSnap.data() };
-          if (isMounted) setItem(itemData);
+          if (isMounted) {
+            setItem(itemData);
+            setEditPrice(itemData.price || '');
+            setEditTitle(itemData.title || '');
+            setEditDescription(itemData.description || '');
+          }
 
-          // Count one view per visitor per session (not the owner)
+          // If this is a brand listing, fetch the official brand document for accurate store name
+          if (itemData.brandId) {
+            const brandSnap = await getDoc(doc(db, 'brands', itemData.brandId));
+            if (brandSnap.exists() && isMounted) {
+              setBrandInfo(brandSnap.data());
+            }
+          }
+
+          // Count one product view per visitor per session (not the owner)
           try {
-            const viewedKey = `viewed_${id}`;
-            const isOwner = currentUser?.uid && currentUser.uid === itemData.sellerId;
+            const viewedKey = `viewed_product_${id}`;
+            const isOwner = currentUser?.uid && (currentUser.uid === itemData.sellerId);
             if (!isOwner && !sessionStorage.getItem(viewedKey)) {
               sessionStorage.setItem(viewedKey, '1');
               updateDoc(docRef, { views: increment(1) }).catch(() => {});
             }
           } catch {
-            // storage blocked: skip counting
+            // storage blocked
           }
         } else {
           if (isMounted) setItem(null);
@@ -127,6 +146,33 @@ export default function ItemDetails() {
     };
   }, [id, currentUser]);
 
+  // Handle quick product update (Price / Title / Description)
+  const handleQuickUpdate = async (e) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    setUpdating(true);
+
+    try {
+      const docRef = doc(db, 'listings', id);
+      const updatedData = {
+        title: editTitle.trim(),
+        price: Number(editPrice),
+        description: editDescription.trim(),
+        updatedAt: serverTimestamp()
+      };
+
+      await updateDoc(docRef, updatedData);
+      setItem((prev) => ({ ...prev, ...updatedData }));
+      setShowEditModal(false);
+      alert('Product updated successfully!');
+    } catch (err) {
+      console.error('Error updating listing:', err);
+      alert('Failed to update product details.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   // Handle tracking WhatsApp clicks & sending real-time notification to seller
   const handleWhatsAppClick = async () => {
     try {
@@ -135,7 +181,6 @@ export default function ItemDetails() {
         whatsappClicks: increment(1)
       });
 
-      // 🔔 Send inquiry notification to the seller if the buyer is not the owner
       if (item?.sellerId && currentUser?.uid !== item.sellerId) {
         await createNotification({
           recipientId: item.sellerId,
@@ -145,7 +190,7 @@ export default function ItemDetails() {
         });
       }
     } catch (err) {
-      console.error('Error tracking WhatsApp click or creating notification:', err);
+      console.error('Error tracking WhatsApp click:', err);
     }
   };
 
@@ -198,6 +243,10 @@ export default function ItemDetails() {
   const isSold = item.status === 'sold';
   const whatsappUrl = whatsappLink(item.whatsappNumber, `Hi, is this still available: ${item.title}? (from Market Arena)`);
   const phoneUrl = telLink(item.whatsappNumber);
+  const isOwner = currentUser?.uid && (currentUser.uid === item.sellerId);
+
+  // Combine single image and multiple images array safely
+  const productImages = item.images?.length > 0 ? item.images : (item.imageUrl ? [item.imageUrl] : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30']);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
@@ -212,38 +261,48 @@ export default function ItemDetails() {
           <span>Back</span>
         </button>
 
-        <button
-          onClick={handleToggleFavorite}
-          className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold ${
-            isFavorite 
-              ? 'bg-red-50 text-red-600 border-red-200' 
-              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-          }`}
-        >
-          <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-600 text-red-600' : ''}`} />
-          <span>{isFavorite ? 'Saved' : 'Save Item'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {isOwner && (
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+            >
+              <Pencil className="w-4 h-4" /> Edit Price / Details
+            </button>
+          )}
+          <button
+            onClick={handleToggleFavorite}
+            className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold ${
+              isFavorite 
+                ? 'bg-red-50 text-red-600 border-red-200' 
+                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-600 text-red-600' : ''}`} />
+            <span>{isFavorite ? 'Saved' : 'Save Item'}</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
         
-        {/* Images Section */}
+        {/* Images Section supporting Multiple Pictures */}
         <div>
           <div className="relative h-72 sm:h-80 bg-gray-100 rounded-xl overflow-hidden mb-3 border border-gray-200">
             {isSold && (
               <div className="absolute top-3 left-3 z-10 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow">SOLD</div>
             )}
             <img 
-              src={optimizeImage(item.images?.[activeImageIndex] || item.imageUrl, 900) || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30'} 
+              src={optimizeImage(productImages[activeImageIndex], 900)} 
               alt={item.title} 
               className="w-full h-full object-cover"
             />
           </div>
 
-          {/* Thumbnails */}
-          {item.images?.length > 1 && (
+          {/* Thumbnails Carousel */}
+          {productImages.length > 1 && (
             <div className="flex space-x-2 overflow-x-auto pb-1">
-              {item.images.map((img, idx) => (
+              {productImages.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveImageIndex(idx)}
@@ -271,11 +330,11 @@ export default function ItemDetails() {
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">{item.title}</h1>
             <p className="text-2xl font-black text-[#22C55E] mb-3">₦{formattedPrice}</p>
 
-            {/* View & Engagement Counters */}
+            {/* Product-level View & Inquiry Impression Counters */}
             <div className="flex items-center space-x-4 text-xs font-semibold text-gray-500 mb-4 py-2 px-3 bg-gray-50 rounded-xl w-fit border border-gray-100">
               <span className="flex items-center gap-1.5 text-gray-600">
                 <Eye className="w-4 h-4 text-gray-400" />
-                <span>{item.views || 0} Views</span>
+                <span>{item.views || 0} Product Views</span>
               </span>
               <span className="text-gray-300">|</span>
               <span className="flex items-center gap-1.5 text-gray-600">
@@ -295,16 +354,38 @@ export default function ItemDetails() {
             </div>
           </div>
 
-          {/* Seller Card & Contact Buttons */}
+          {/* Seller / Brand Store Card & Contact Buttons */}
           <div className="pt-4 border-t border-gray-100">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-emerald-100 text-[#064E3B] rounded-full flex items-center justify-center font-bold text-sm">
-                {item.sellerName?.[0] || 'V'}
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Seller</p>
-                <Link to={`/vendor/${item.sellerId}`} className="text-sm font-bold text-gray-800 hover:text-[#22C55E]">{item.sellerName || 'Seller'}</Link>
-              </div>
+              {item.brandId ? (
+                <>
+                  <div className="w-10 h-10 bg-emerald-100 text-emerald-800 rounded-xl flex items-center justify-center font-bold text-sm overflow-hidden border">
+                    {brandInfo?.logoUrl ? (
+                      <img src={brandInfo.logoUrl} alt="logo" className="w-full h-full object-cover" />
+                    ) : (
+                      <Store className="w-5 h-5 text-emerald-600" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Official Storefront</p>
+                    <Link to={`/brand/${item.brandId}`} className="text-sm font-extrabold text-gray-900 hover:text-[#22C55E] flex items-center gap-1">
+                      {brandInfo?.brandName || item.brandName || 'Verified Brand Store'} <ShieldCheck className="w-4 h-4 text-blue-500" />
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-10 h-10 bg-emerald-100 text-[#064E3B] rounded-full flex items-center justify-center font-bold text-sm">
+                    {item.sellerName?.[0] || 'V'}
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Seller</p>
+                    <Link to={`/vendor/${item.sellerId}`} className="text-sm font-bold text-gray-800 hover:text-[#22C55E]">
+                      {item.sellerName || 'Seller'}
+                    </Link>
+                  </div>
+                </>
+              )}
             </div>
 
             {isSold && (
@@ -357,26 +438,22 @@ export default function ItemDetails() {
               </div>
             )}
 
-            <div className="mt-3 flex items-center space-x-1.5 text-[11px] text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-100">
-              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>Meet in safe public spots like UNICAL campus or Marian Road.</span>
-            </div>
+            {/* Safety banner only for regular non-brand listings */}
+            {!item.brandId && (
+              <div className="mt-3 flex items-center space-x-1.5 text-[11px] text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-100">
+                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Meet in safe space and sports.</span>
+              </div>
+            )}
           </div>
 
         </div>
 
       </div>
 
-      {/* Report Listing Button & Modal */}
+      {/* Report Listing Footer */}
       <div className="mt-8 pt-4 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
-        {currentUser?.uid === item.sellerId ? (
-          <Link to={`/edit/${id}`} className="text-[#064E3B] hover:text-[#22C55E] font-semibold flex items-center space-x-1">
-            <Pencil className="w-4 h-4" />
-            <span>Edit listing</span>
-          </Link>
-        ) : (
-          <span>Listing ID: {id}</span>
-        )}
+        <span>Listing ID: {id}</span>
         <button
           onClick={() => setShowReportModal(true)}
           className="text-red-600 hover:text-red-700 font-semibold flex items-center space-x-1 cursor-pointer"
@@ -386,6 +463,69 @@ export default function ItemDetails() {
         </button>
       </div>
 
+      {/* Quick Edit Modal for Product Owner / Brand Manager */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative">
+            <h3 className="text-base font-bold text-gray-900 mb-1">Edit Product Details</h3>
+            <p className="text-xs text-gray-500 mb-4">Update pricing or descriptions instantly.</p>
+
+            <form onSubmit={handleQuickUpdate} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Product Title</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full text-xs p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#22C55E]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Price (₦)</label>
+                <input
+                  type="number"
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(e.target.value)}
+                  className="w-full text-xs p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#22C55E]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  rows="3"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full text-xs p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#22C55E]"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 rounded-xl cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updating}
+                  className="px-4 py-2 text-xs font-bold text-white bg-[#22C55E] hover:bg-[#16a34a] rounded-xl cursor-pointer disabled:opacity-50"
+                >
+                  {updating ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Report Modal */}
       {showReportModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative">

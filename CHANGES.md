@@ -6,7 +6,7 @@ Project name and file names are NOT changed.
 1. Copy everything in this folder into your project and say YES to overwrite.
    Your own `.env` is not inside, so keep your own `.env` file.
 2. Open your `.env` and add one new line (only needed for Boost payments):
-   `VITE_PAYSTACK_PUBLIC_KEY=pk_test_xxxxxxxx`
+   `VITE_FLUTTERWAVE_PUBLIC_KEY=pk_test_xxxxxxxx`
    (see `.env.example`). Use the PUBLIC key only, never the secret key.
 3. Run `npm run dev`. Stop and start it again after changing `.env`.
 4. Firebase Console -> Firestore Database -> Rules -> paste everything from `firestore.rules` -> Publish.

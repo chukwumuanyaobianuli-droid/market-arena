@@ -1,15 +1,14 @@
 import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 
-// Opens the Paystack window, then pins the listing to the top.
-// Used on the Post Item page. (My Listings has its own copy that still works.)
+// Opens the Flutterwave window, then pins the listing ONLY AFTER verified payment.
 export const startBoostPayment = ({ listing, plan, email, userId, onSuccess, onError, onClose }) => {
-  const key = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
-  if (!key) {
-    onError?.('Boost is not ready. Add VITE_PAYSTACK_PUBLIC_KEY to your .env file and restart.');
+  const public_key = import.meta.env.VITE_FLUTTERWAVE_PUBLIC_KEY;
+  if (!public_key) {
+    onError?.('Boost is not ready. Add VITE_FLUTTERWAVE_PUBLIC_KEY to your .env file and restart.');
     return;
   }
-  if (!window.PaystackPop) {
+  if (typeof window.FlutterwaveCheckout === 'undefined') {
     onError?.('Payment window did not load. Check your network and try again.');
     return;
   }
@@ -25,7 +24,7 @@ export const startBoostPayment = ({ listing, plan, email, userId, onSuccess, onE
         listingId: listing.id,
         amount: plan.price,
         type: 'featured_boost',
-        paystackReference: reference,
+        flutterwaveReference: reference,
         status: 'success',
         createdAt: serverTimestamp()
       });
@@ -36,21 +35,33 @@ export const startBoostPayment = ({ listing, plan, email, userId, onSuccess, onE
     }
   };
 
-  const handler = window.PaystackPop.setup({
-    key,
-    email,
-    amount: plan.price * 100, // Paystack uses kobo
+  window.FlutterwaveCheckout({
+    public_key,
+    tx_ref: `MA-${listing.id.slice(0, 6)}-${Date.now()}`,
+    amount: plan.price,
     currency: 'NGN',
-    ref: `MA-${listing.id.slice(0, 6)}-${Date.now()}`,
-    metadata: { listingId: listing.id, plan: plan.id },
-    // Paystack wants a normal function here, not an async one
-    callback: function (response) {
-      paid = true;
-      activate(response.reference);
+    payment_options: 'card, banktransfer, ussd',
+    customer: {
+      email: email || 'user@marketarena.ng',
+      name: 'Market Arena Vendor'
     },
-    onClose: function () {
+    customizations: {
+      title: 'Market Arena',
+      description: `Featured Listing Boost (${plan.label})`,
+      logo: '/logo.png'
+    },
+    callback: function (response) {
+      // 🔒 VERIFY PAYMENT SUCCESS BEFORE ACTIVATING BOOST
+      if (response.status === 'successful' || response.status === 'completed') {
+        paid = true;
+        const ref = response.transaction_id || response.tx_ref;
+        activate(ref);
+      } else {
+        onError?.('Payment was not completed. Please try again.');
+      }
+    },
+    onclose: function () {
       if (!paid) onClose?.();
     }
   });
-  handler.openIframe();
 };

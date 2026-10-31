@@ -6,10 +6,8 @@ import { Shield, FileText } from 'lucide-react';
 export default function Footer() {
   const { currentUser } = useAuth();
 
-  // Replace with your actual admin UID or check your admin logic
-  // (You can also check if currentUser?.email === 'your-admin-email@gmail.com')
-  const ADMIN_UID = 'YOUR_ADMIN_UID_HERE'; // Or adjust based on how your Admin.jsx checks admin
-  const isAdmin = currentUser && currentUser.uid === ADMIN_UID;
+  const ADMIN_EMAIL = 'chukwumuanyaobianuli@gmail.com'; 
+  const isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
 
   return (
     <footer className="bg-white border-t border-gray-200 mt-auto py-8 px-4 text-xs text-gray-500">
@@ -32,7 +30,7 @@ export default function Footer() {
           <span>{new Date().getFullYear()} Market Arena. All rights reserved.</span>
         </div>
 
-        {/* Center/Right: Policy Links for Paystack Compliance */}
+        {/* Center/Right: Policy Links for Flutterwave Compliance */}
         <div className="flex flex-wrap items-center justify-center gap-4 font-medium text-gray-600">
           <Link to="/policies" className="hover:text-[#22C55E] transition-colors flex items-center gap-1">
             <FileText className="w-3.5 h-3.5" />

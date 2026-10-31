@@ -1,10 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, PlusCircle, User, Heart } from 'lucide-react';
+import { MapPin, PlusCircle, User, Heart, Store } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
+
+  const isBrandOwner = userProfile?.isBrandOwner || userProfile?.brandId;
+  const brandId = userProfile?.brandId || currentUser?.uid;
 
   return (
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
@@ -44,6 +47,18 @@ export default function Navbar() {
           {/* Action Buttons */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             
+            {/* 🌟 Conditional Brand Store Button (Only visible to verified brand owners) */}
+            {isBrandOwner && (
+              <Link
+                to={`/brand/${brandId}`}
+                title="View My Brand Storefront"
+                className="hidden md:flex items-center space-x-1.5 bg-emerald-900 hover:bg-emerald-800 text-amber-300 border border-emerald-700 text-xs font-extrabold px-3 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer"
+              >
+                <Store className="w-4 h-4" />
+                <span>My Brand Store</span>
+              </Link>
+            )}
+
             {/* Favorites Link */}
             <Link
               to="/favorites"

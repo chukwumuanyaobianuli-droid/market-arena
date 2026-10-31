@@ -14,6 +14,9 @@ import EditItem from './pages/EditItem';
 import Policies from './pages/Policies';
 import InstallPromptModal from './components/InstallPromptModal';
 import Favorites from './pages/Favorites';
+import CreateBrand from './pages/CreateBrand';
+import BrandProfile from './pages/BrandProfile';
+import EditBrand from './pages/EditBrand';
 
 // Go to top of the page every time the route changes
 function ScrollToTop() {
@@ -47,6 +50,7 @@ export default function App() {
   <Route path="/" element={<Home />} />
   <Route path="/login" element={<Login />} />
   <Route path="/profile" element={<Profile />} />
+  
   <Route path="/favorites" element={<Favorites />} /> {/* 👈 HERE */}
   <Route path="/post-item" element={<PostItem />} />
   <Route path="/item/:id" element={<ItemDetails />} />
@@ -56,6 +60,9 @@ export default function App() {
   <Route path="/edit/:id" element={<EditItem />} />
   <Route path="/policies" element={<Policies />} />
   <Route path="*" element={<NotFound />} />
+  <Route path="/create-brand" element={<CreateBrand />} />
+<Route path="/brand/:brandId" element={<BrandProfile />} />
+<Route path="/edit-brand" element={<EditBrand />} />
 </Routes>
         </div>
         

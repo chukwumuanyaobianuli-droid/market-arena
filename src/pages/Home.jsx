@@ -6,6 +6,7 @@ import Hero from '../components/Hero';
 import CategoryPills from '../components/CategoryPills';
 import ProductCard from '../components/ProductCard';
 import { isBoosted } from '../utils/constants';
+import HomeBrandsSection from '../components/HomeBrandsSection';
 
 const PAGE_SIZE = 20;
 
@@ -101,6 +102,11 @@ export default function Home() {
       />
 
       <CategoryPills selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
+
+      {/* 🌟 Top Verified Brands in Calabar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <HomeBrandsSection />
+      </div>
 
       {/* Sort & Price Filter Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { isValidNgPhone } from '../utils/phone';
 import { LOCATIONS, CATEGORIES, CONDITIONS, BOOST_PLANS } from '../utils/constants';
 import { startBoostPayment } from '../utils/boost';
@@ -113,11 +113,30 @@ export default function PostItem() {
       setLoading(true);
       setError('');
 
+      // 🛑 CHECK FREE BRAND TIER LIMIT: If brand owner on free plan, enforce 1-post limit
+      let brandRef = null;
+      let brandData = null;
+      const isBrandAccount = userProfile?.isBrandOwner || userProfile?.brandId;
+
+      if (isBrandAccount) {
+        const brandDocId = userProfile.brandId || currentUser.uid;
+        brandRef = doc(db, 'brands', brandDocId);
+        const brandSnap = await getDoc(brandRef);
+        if (brandSnap.exists()) {
+          brandData = brandSnap.data();
+          if (brandData.subscriptionPlan === 'free' && (brandData.postCount || 0) >= 1) {
+            setLoading(false);
+            return setError('Free trial brand limit reached (1 listing maximum). Please upgrade to a Weekly or Monthly plan to post more!');
+          }
+        }
+      }
+
       // Save the number on the profile if it was empty or changed
       if (whatsapp !== userProfile?.whatsappNumber) {
         await updateUserProfile({ whatsappNumber: whatsapp });
       }
 
+      // 🌟 Build listing data, explicitly tagging brandId if this user is a brand owner
       const listingData = {
         title: title.trim(),
         price: Number(price),
@@ -129,12 +148,20 @@ export default function PostItem() {
         sellerId: currentUser.uid,
         sellerName: userProfile?.displayName || 'Market Arena Seller',
         whatsappNumber: whatsapp,
+        brandId: isBrandAccount ? userProfile?.brandId || currentUser.uid : null, // Segregate brand store items from regular personal listings
         isFeatured: false,
         status: 'active',
         createdAt: serverTimestamp()
       };
 
       const docRef = await addDoc(collection(db, 'listings'), listingData);
+
+      // If posting as a free brand tier, increment their postCount
+      if (brandRef && brandData && brandData.subscriptionPlan === 'free') {
+        await updateDoc(brandRef, {
+          postCount: (brandData.postCount || 0) + 1
+        });
+      }
 
       // Item is posted. If a boost was chosen, open the payment window now.
       const plan = BOOST_PLANS.find((p) => p.id === boostPlanId);
@@ -145,7 +172,7 @@ export default function PostItem() {
           plan,
           email: currentUser.email,
           userId: currentUser.uid,
-          onSuccess: () => navigate('/'),
+          onSuccess: () => navigate(isBrandAccount ? `/brand/${currentUser.uid}` : '/'),
           onClose: () => navigate('/my-listings'), // posted, not boosted. Can boost later.
           onError: (msg) => {
             window.alert(`${msg}\n\nYour item is posted. You can boost it later in My Listings.`);
@@ -155,7 +182,7 @@ export default function PostItem() {
         return;
       }
 
-      navigate('/');
+      navigate(isBrandAccount ? `/brand/${currentUser.uid}` : '/');
     } catch (err) {
       console.error(err);
       setError('Failed to post item. Please check your connection and try again.');
