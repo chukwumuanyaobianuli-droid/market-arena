@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { BRAND_PLANS, startBrandSubscription } from '../utils/brandSubscription';
+import { db } from '../firebase/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { Store, MapPin, Upload, AlertCircle, Image as ImageIcon, Loader2 } from 'lucide-react';
 
 const CATEGORIES = ['Fashion & Apparel', 'Electronics & Tech', 'Beauty & Personal Care', 'Food & Eateries', 'Services', 'Home & Living'];
@@ -23,9 +25,29 @@ export default function CreateBrand() {
 
   const [selectedPlan, setSelectedPlan] = useState(BRAND_PLANS[0]); // Default to Free Trial
   const [loading, setLoading] = useState(false);
+  const [checkingBrand, setCheckingBrand] = useState(true);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [error, setError] = useState(null);
+
+  // 🔒 Enforce One-User, One-Brand rule on load
+  useEffect(() => {
+    const checkExistingBrand = async () => {
+      if (!currentUser) return;
+      try {
+        const brandSnap = await getDoc(doc(db, 'brands', currentUser.uid));
+        if (brandSnap.exists()) {
+          alert('You already own a registered brand store! Redirecting to your storefront.');
+          navigate(`/brand/${currentUser.uid}`);
+        }
+      } catch (err) {
+        console.error('Error checking existing brand:', err);
+      } finally {
+        setCheckingBrand(false);
+      }
+    };
+    checkExistingBrand();
+  }, [currentUser, navigate]);
 
   // Helper function to upload files directly to Cloudinary
   const uploadToCloudinary = async (file, type) => {
@@ -89,6 +111,10 @@ export default function CreateBrand() {
       onClose: () => setLoading(false)
     });
   };
+
+  if (checkingBrand) {
+    return <div className="text-center py-20 text-gray-400 text-xs">Checking brand status...</div>;
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
