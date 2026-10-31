@@ -45,48 +45,48 @@ export default function Navbar() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            
-            {/* 🌟 Conditional Brand Store Button (Only visible to verified brand owners) */}
-            {isBrandOwner && (
-              <Link
-                to={`/brand/${brandId}`}
-                title="View My Brand Storefront"
-                className="hidden md:flex items-center space-x-1.5 bg-emerald-900 hover:bg-emerald-800 text-amber-300 border border-emerald-700 text-xs font-extrabold px-3 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer"
-              >
-                <Store className="w-4 h-4" />
-                <span>My Brand Store</span>
-              </Link>
-            )}
+<div className="flex items-center space-x-1.5 sm:space-x-3">
+  
+  {/* 🌟 Compact Brand Store Button for Mobile & Desktop */}
+  {isBrandOwner && (
+    <Link
+      to={`/brand/${brandId}`}
+      title="My Brand Store"
+      className="flex items-center space-x-1 bg-emerald-900 hover:bg-emerald-800 text-amber-300 border border-emerald-700 text-xs font-extrabold px-2.5 sm:px-3 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer"
+    >
+      <Store className="w-4 h-4 shrink-0" />
+      <span className="hidden sm:inline">My Brand</span>
+    </Link>
+  )}
 
-            {/* Favorites Link */}
-            <Link
-              to="/favorites"
-              title="My Favorites"
-              className="flex items-center space-x-1 text-xs font-semibold text-gray-700 bg-red-50/60 hover:bg-red-50 text-red-600 px-3 py-2.5 rounded-xl border border-red-100 transition-colors cursor-pointer"
-            >
-              <Heart className="w-4 h-4 fill-red-500 text-red-500" />
-              <span className="hidden sm:inline font-bold">Saved</span>
-            </Link>
+  {/* Favorites Link */}
+  <Link
+    to="/favorites"
+    title="My Favorites"
+    className="flex items-center space-x-1 text-xs font-semibold text-gray-700 bg-red-50/60 hover:bg-red-50 text-red-600 px-2.5 sm:px-3 py-2.5 rounded-xl border border-red-100 transition-colors cursor-pointer"
+  >
+    <Heart className="w-4 h-4 fill-red-500 text-red-500 shrink-0" />
+    <span className="hidden sm:inline font-bold">Saved</span>
+  </Link>
 
-            {/* Sell Item Button */}
-            <Link
-              to="/post-item"
-              className="flex items-center space-x-1.5 bg-[#22C55E] hover:bg-[#16a34a] text-white text-xs font-bold px-3.5 sm:px-4 py-2.5 rounded-xl shadow-md shadow-emerald-500/20 hover:shadow-lg transition-all cursor-pointer"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Sell Item</span>
-            </Link>
+  {/* Sell Item Button */}
+  <Link
+    to="/post-item"
+    className="flex items-center space-x-1 bg-[#22C55E] hover:bg-[#16a34a] text-white text-xs font-bold px-3 sm:px-4 py-2.5 rounded-xl shadow-md shadow-emerald-500/20 transition-all cursor-pointer"
+  >
+    <PlusCircle className="w-4 h-4 shrink-0" />
+    <span>Sell</span>
+  </Link>
 
-            {/* Account / Login */}
-            <Link
-              to={currentUser ? "/profile" : "/login"}
-              className="flex items-center space-x-1 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 px-3.5 py-2.5 rounded-xl border border-gray-200 transition-colors cursor-pointer"
-            >
-              <User className="w-4 h-4 text-gray-500" />
-              <span className="hidden sm:inline">{currentUser ? 'Account' : 'Login'}</span>
-            </Link>
-          </div>
+  {/* Account / Login */}
+  <Link
+    to={currentUser ? "/profile" : "/login"}
+    className="flex items-center space-x-1 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 px-2.5 sm:px-3.5 py-2.5 rounded-xl border border-gray-200 transition-colors cursor-pointer"
+  >
+    <User className="w-4 h-4 text-gray-500 shrink-0" />
+    <span className="hidden sm:inline">{currentUser ? 'Account' : 'Login'}</span>
+  </Link>
+</div>
 
         </div>
       </div>
