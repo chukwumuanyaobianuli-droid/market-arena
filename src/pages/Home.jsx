@@ -92,15 +92,14 @@ export default function Home() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.25 }}
       className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8"
     >
-      {/* Clean Hero Component without duplication */}
       <Hero
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
-        selectedLocation={selectedLocation}
-        setSelectedLocation={setSelectedLocation}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
       />
 
       <CategoryPills selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
@@ -187,59 +186,66 @@ export default function Home() {
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"
           >
             <AnimatePresence>
-              {visibleItems.map((item) => {
+              {visibleItems.map((item, index) => {
                 const isFeaturedItem = item.isFeatured && item.featuredUntil > Date.now();
                 return (
                   <motion.div
                     key={item.id}
                     layout
-                    initial={{ opacity: 0, scale: 0.95 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.25 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 25, delay: index * 0.03 }}
                   >
-                    <Link
-                      to={`/item/${item.id}`}
-                      className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 block overflow-hidden transform hover:-translate-y-1 h-full flex flex-col justify-between"
+                    <motion.div
+                      whileHover={{ y: -4, scale: 1.01 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                      className="h-full"
                     >
-                      <div>
-                        <div className="aspect-square relative overflow-hidden bg-gray-100">
-                          {isFeaturedItem && (
-                            <span className="absolute top-2 left-2 z-10 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-lg shadow-md border border-amber-200 tracking-wider flex items-center gap-1">
-                              ⭐ FEATURED
+                      <Link
+                        to={`/item/${item.id}`}
+                        className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-shadow duration-200 block overflow-hidden h-full flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="aspect-square relative overflow-hidden bg-gray-100">
+                            {isFeaturedItem && (
+                              <span className="absolute top-2 left-2 z-10 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-lg shadow-md border border-amber-200 tracking-wider flex items-center gap-1">
+                                ⭐ FEATURED
+                              </span>
+                            )}
+                            <img
+                              src={item.images?.[0] || item.imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30'}
+                              alt={item.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <span className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 font-medium">
+                              <Eye className="w-3 h-3 text-emerald-400" /> {item.views || 0}
                             </span>
-                          )}
-                          <img
-                            src={item.images?.[0] || item.imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30'}
-                            alt={item.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <span className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 font-medium">
-                            <Eye className="w-3 h-3 text-emerald-400" /> {item.views || 0}
-                          </span>
+                          </div>
+
+                          <div className="p-3">
+                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                              {item.category}
+                            </span>
+                            <h3 className="text-xs font-bold text-gray-800 line-clamp-1 mt-1.5 group-hover:text-[#22C55E] transition-colors">
+                              {item.title}
+                            </h3>
+                          </div>
                         </div>
 
-                        <div className="p-3">
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-                            {item.category}
-                          </span>
-                          <h3 className="text-xs font-bold text-gray-800 line-clamp-1 mt-1.5 group-hover:text-[#22C55E] transition-colors">
-                            {item.title}
-                          </h3>
+                        <div className="p-3 pt-0">
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                            <span className="text-xs font-extrabold text-[#22C55E]">
+                              ₦{Number(item.price).toLocaleString()}
+                            </span>
+                            <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                              <MapPin className="w-3 h-3 text-gray-400" /> {item.location?.split(',')[0]}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-
-                      <div className="p-3 pt-0">
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-50">
-                          <span className="text-xs font-extrabold text-[#22C55E]">
-                            ₦{Number(item.price).toLocaleString()}
-                          </span>
-                          <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
-                            <MapPin className="w-3 h-3 text-gray-400" /> {item.location?.split(',')[0]}
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
+                      </Link>
+                    </motion.div>
                   </motion.div>
                 );
               })}
