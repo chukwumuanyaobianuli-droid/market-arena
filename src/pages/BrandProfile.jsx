@@ -4,6 +4,7 @@ import { doc, getDoc, collection, query, where, getDocs, updateDoc, increment } 
 import { db } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { ShieldCheck, MapPin, Phone, MessageSquare, ShoppingBag, Settings, Eye, PlusCircle, BarChart3, TrendingUp } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function BrandProfile() {
   const { brandId } = useParams();
@@ -18,13 +19,11 @@ export default function BrandProfile() {
     const fetchBrandAndCatalog = async () => {
       try {
         setLoading(true);
-        // 1. Fetch Brand Document
         const brandSnap = await getDoc(doc(db, 'brands', brandId));
         if (brandSnap.exists()) {
           const brandData = { id: brandSnap.id, ...brandSnap.data() };
           setBrand(brandData);
 
-          // 2. Increment store view counter if visitor is not the owner
           if (!currentUser || currentUser.uid !== brandData.ownerId) {
             try {
               await updateDoc(doc(db, 'brands', brandId), {
@@ -35,12 +34,10 @@ export default function BrandProfile() {
             }
           }
 
-          // 3. Fetch items tied specifically to this brand's catalog (brandId)
           const q = query(collection(db, 'listings'), where('brandId', '==', brandId));
           const listingsSnap = await getDocs(q);
           const catalogItems = listingsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
           
-          // Sort boosted / featured items to the top automatically
           catalogItems.sort((a, b) => {
             const aFeatured = a.isFeatured && a.featuredUntil > Date.now() ? 1 : 0;
             const bFeatured = b.isFeatured && b.featuredUntil > Date.now() ? 1 : 0;
@@ -61,7 +58,6 @@ export default function BrandProfile() {
     }
   }, [brandId, currentUser]);
 
-  // Calculate total product views and total inquiries for the brand owner's metrics
   const totalProductViews = items.reduce((sum, item) => sum + (item.views || 0), 0);
   const totalInquiries = items.reduce((sum, item) => sum + (item.whatsappClicks || 0), 0);
 
@@ -69,9 +65,12 @@ export default function BrandProfile() {
   if (!brand) return <div className="text-center py-20 text-xs text-gray-400">Brand page not found.</div>;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
-      {/* Banner & Brand Header Card */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="max-w-5xl mx-auto px-4 py-6 space-y-6"
+    >
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="h-48 sm:h-60 bg-gray-200 relative">
           <img
             src={brand.bannerUrl || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8'}
@@ -97,7 +96,6 @@ export default function BrandProfile() {
               </div>
             </div>
 
-            {/* Action & Management Buttons */}
             <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
               {isOwner && (
                 <>
@@ -138,7 +136,6 @@ export default function BrandProfile() {
 
           <p className="text-xs text-gray-600 mb-4 max-w-3xl leading-relaxed">{brand.description || 'Official verified vendor storefront on Market Arena Calabar.'}</p>
 
-          {/* 🌟 VENDOR ANALYTICS DASHBOARD CARD (Visible to Store Owners) */}
           {isOwner && (
             <div className="mb-4 p-4 bg-emerald-900 text-white rounded-2xl shadow-inner grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="space-y-1">
@@ -168,7 +165,6 @@ export default function BrandProfile() {
             </div>
           )}
 
-          {/* Location & Public Metrics Bar (Subscription plan badge removed) */}
           <div className="flex flex-wrap items-center gap-6 text-xs text-gray-500 border-t pt-4">
             <span className="flex items-center gap-1.5 font-medium text-gray-700">
               <MapPin className="w-4 h-4 text-emerald-600" /> {brand.location || 'Calabar, Nigeria'}
@@ -180,8 +176,7 @@ export default function BrandProfile() {
         </div>
       </div>
 
-      {/* Official Brand Catalog Grid with Product-Level Views */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <h2 className="text-base font-bold text-gray-900">Official Catalog & Inventory</h2>
       </div>
 
@@ -201,29 +196,36 @@ export default function BrandProfile() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {items.map((item) => (
-            <Link key={item.id} to={`/item/${item.id}`} className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow block relative">
-              {item.isFeatured && item.featuredUntil > Date.now() && (
-                <span className="absolute top-4 left-4 z-10 bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow-md uppercase tracking-wider">
-                  ⚡ BOOSTED
-                </span>
-              )}
-              <div className="relative">
-                <img
-                  src={item.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30'}
-                  alt={item.title}
-                  className="w-full h-36 object-cover rounded-xl mb-2.5"
-                />
-                <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1">
-                  <Eye className="w-3 h-3 text-emerald-400" /> {item.views || 0}
-                </span>
-              </div>
-              <h3 className="text-xs font-bold text-gray-800 line-clamp-1 mb-1">{item.title}</h3>
-              <p className="text-xs font-extrabold text-[#22C55E]">₦{Number(item.price).toLocaleString()}</p>
-            </Link>
-          ))}
+          {items.map((item) => {
+            const isFeaturedItem = item.isFeatured && item.featuredUntil > Date.now();
+            return (
+              <Link 
+                key={item.id} 
+                to={`/item/${item.id}`} 
+                className="group bg-white p-3 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 block relative transform hover:-translate-y-1"
+              >
+                {isFeaturedItem && (
+                  <span className="absolute top-4 left-4 z-10 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 text-[9px] font-black px-2 py-0.5 rounded-md shadow-md border border-amber-200 tracking-wider">
+                    ⭐ FEATURED
+                  </span>
+                )}
+                <div className="aspect-square relative rounded-xl overflow-hidden bg-gray-100 mb-2.5">
+                  <img
+                    src={item.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30'}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <Eye className="w-3 h-3 text-emerald-400" /> {item.views || 0}
+                  </span>
+                </div>
+                <h3 className="text-xs font-bold text-gray-800 line-clamp-1 mb-1 group-hover:text-[#22C55E] transition-colors">{item.title}</h3>
+                <p className="text-xs font-extrabold text-[#22C55E]">₦{Number(item.price).toLocaleString()}</p>
+              </Link>
+            );
+          })}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

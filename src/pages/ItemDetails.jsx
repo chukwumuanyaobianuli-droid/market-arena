@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { optimizeImage } from '../utils/imageUpload';
 import { db } from '../firebase/firebase';
 import { addDoc, collection, doc, getDoc, setDoc, updateDoc, increment, serverTimestamp, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { motion } from 'framer-motion';
 import { MapPin, Phone, MessageCircle, ArrowLeft, ShieldAlert, AlertCircle, Eye, Share2, Pencil, Heart, Store, ShieldCheck } from 'lucide-react';
 import { whatsappLink, telLink } from '../utils/phone';
 import { createNotification } from '../utils/notifications';
@@ -18,22 +19,17 @@ export default function ItemDetails() {
   const [loading, setLoading] = useState(true);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  // Favorites state
   const [isFavorite, setIsFavorite] = useState(false);
-
-  // State for reporting modal
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportSubmitted, setReportSubmitted] = useState(false);
 
-  // Quick edit modal states for price/details
   const [showEditModal, setShowEditModal] = useState(false);
   const [editPrice, setEditPrice] = useState('');
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [updating, setUpdating] = useState(false);
 
-  // Check if item is already in user's saved items
   useEffect(() => {
     if (!currentUser || !id) return;
     const checkFavoriteStatus = async () => {
@@ -50,7 +46,6 @@ export default function ItemDetails() {
     checkFavoriteStatus();
   }, [currentUser, id]);
 
-  // Handle Save / Favorite toggle
   const handleToggleFavorite = async () => {
     if (!currentUser) {
       alert('Please log in to save items.');
@@ -92,7 +87,6 @@ export default function ItemDetails() {
     }
   };
 
-  // Load item & brand info, and increment product view count atomically
   useEffect(() => {
     let isMounted = true;
 
@@ -110,7 +104,6 @@ export default function ItemDetails() {
             setEditDescription(itemData.description || '');
           }
 
-          // If this is a brand listing, fetch the official brand document for accurate store name
           if (itemData.brandId) {
             const brandSnap = await getDoc(doc(db, 'brands', itemData.brandId));
             if (brandSnap.exists() && isMounted) {
@@ -118,7 +111,6 @@ export default function ItemDetails() {
             }
           }
 
-          // Count one product view per visitor per session (not the owner)
           try {
             const viewedKey = `viewed_product_${id}`;
             const isOwner = currentUser?.uid && (currentUser.uid === itemData.sellerId);
@@ -146,7 +138,6 @@ export default function ItemDetails() {
     };
   }, [id, currentUser]);
 
-  // Handle quick product update (Price / Title / Description)
   const handleQuickUpdate = async (e) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -173,7 +164,6 @@ export default function ItemDetails() {
     }
   };
 
-  // Handle tracking WhatsApp clicks & sending real-time notification to seller
   const handleWhatsAppClick = async () => {
     try {
       const docRef = doc(db, 'listings', id);
@@ -244,15 +234,17 @@ export default function ItemDetails() {
   const whatsappUrl = whatsappLink(item.whatsappNumber, `Hi, is this still available: ${item.title}? (from Market Arena)`);
   const phoneUrl = telLink(item.whatsappNumber);
   const isOwner = currentUser?.uid && (currentUser.uid === item.sellerId);
+  const isFeaturedItem = item.isFeatured && item.featuredUntil > Date.now();
 
-  // Combine single image and multiple images array safely
   const productImages = item.images?.length > 0 ? item.images : (item.imageUrl ? [item.imageUrl] : ['https://images.unsplash.com/photo-1523275335684-37898b6baf30']);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
-      
-      {/* Top Header Bar: Back & Favorite Buttons */}
-      <div className="flex items-center justify-between mb-4">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-4xl mx-auto px-4 py-6 space-y-4"
+    >
+      <div className="flex items-center justify-between mb-2">
         <button 
           onClick={() => navigate(-1)} 
           className="flex items-center space-x-1 text-xs font-semibold text-gray-600 hover:text-[#064E3B] bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-sm w-fit cursor-pointer"
@@ -284,13 +276,16 @@ export default function ItemDetails() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-        
-        {/* Images Section supporting Multiple Pictures */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
         <div>
-          <div className="relative h-72 sm:h-80 bg-gray-100 rounded-xl overflow-hidden mb-3 border border-gray-200">
+          <div className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden mb-3 border border-gray-200">
             {isSold && (
               <div className="absolute top-3 left-3 z-10 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow">SOLD</div>
+            )}
+            {isFeaturedItem && !isSold && (
+              <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 text-xs font-black px-3 py-1 rounded-xl shadow-md border border-amber-200 flex items-center gap-1 tracking-wider">
+                ⭐ FEATURED PRODUCT
+              </div>
             )}
             <img 
               src={optimizeImage(productImages[activeImageIndex], 900)} 
@@ -299,14 +294,13 @@ export default function ItemDetails() {
             />
           </div>
 
-          {/* Thumbnails Carousel */}
           {productImages.length > 1 && (
             <div className="flex space-x-2 overflow-x-auto pb-1">
               {productImages.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveImageIndex(idx)}
-                  className={`w-16 h-16 rounded-lg overflow-hidden border-2 shrink-0 cursor-pointer ${activeImageIndex === idx ? 'border-[#22C55E]' : 'border-transparent'}`}
+                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 shrink-0 cursor-pointer ${activeImageIndex === idx ? 'border-[#22C55E]' : 'border-transparent'}`}
                 >
                   <img src={optimizeImage(img, 160)} alt="thumb" className="w-full h-full object-cover" />
                 </button>
@@ -315,7 +309,6 @@ export default function ItemDetails() {
           )}
         </div>
 
-        {/* Details & Actions */}
         <div className="flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -330,7 +323,6 @@ export default function ItemDetails() {
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">{item.title}</h1>
             <p className="text-2xl font-black text-[#22C55E] mb-3">₦{formattedPrice}</p>
 
-            {/* Product-level View & Inquiry Impression Counters */}
             <div className="flex items-center space-x-4 text-xs font-semibold text-gray-500 mb-4 py-2 px-3 bg-gray-50 rounded-xl w-fit border border-gray-100">
               <span className="flex items-center gap-1.5 text-gray-600">
                 <Eye className="w-4 h-4 text-gray-400" />
@@ -354,7 +346,6 @@ export default function ItemDetails() {
             </div>
           </div>
 
-          {/* Seller / Brand Store Card & Contact Buttons */}
           <div className="pt-4 border-t border-gray-100">
             <div className="flex items-center space-x-3 mb-4">
               {item.brandId ? (
@@ -423,7 +414,6 @@ export default function ItemDetails() {
                   </a>
                 </div>
 
-                {/* Share to WhatsApp Button */}
                 <a
                   href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
                     `Check out this item on Market Arena! 🛒\n*${item?.title || 'Product'}*\nPrice: ₦${formattedPrice}\nLocation: ${item?.location || 'Calabar'}\n\nView here: ${window.location.href}`
@@ -438,7 +428,6 @@ export default function ItemDetails() {
               </div>
             )}
 
-            {/* Safety banner only for regular non-brand listings */}
             {!item.brandId && (
               <div className="mt-3 flex items-center space-x-1.5 text-[11px] text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-100">
                 <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
@@ -446,12 +435,9 @@ export default function ItemDetails() {
               </div>
             )}
           </div>
-
         </div>
-
       </div>
 
-      {/* Report Listing Footer */}
       <div className="mt-8 pt-4 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
         <span>Listing ID: {id}</span>
         <button
@@ -463,7 +449,6 @@ export default function ItemDetails() {
         </button>
       </div>
 
-      {/* Quick Edit Modal for Product Owner / Brand Manager */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative">
@@ -525,7 +510,6 @@ export default function ItemDetails() {
         </div>
       )}
 
-      {/* Report Modal */}
       {showReportModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative">
@@ -568,7 +552,6 @@ export default function ItemDetails() {
           </div>
         </div>
       )}
-
-    </div>
+    </motion.div>
   );
 }

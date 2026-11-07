@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { PackageOpen, AlertCircle } from 'lucide-react';
+import { PackageOpen, AlertCircle, Eye, Sparkles, MapPin } from 'lucide-react';
 import { db } from '../firebase/firebase';
 import Hero from '../components/Hero';
 import CategoryPills from '../components/CategoryPills';
-import ProductCard from '../components/ProductCard';
 import { isBoosted } from '../utils/constants';
 import HomeBrandsSection from '../components/HomeBrandsSection';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 const PAGE_SIZE = 20;
 
@@ -24,7 +25,6 @@ export default function Home() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
 
-  // Load newest listings. "Load more" makes count bigger.
   useEffect(() => {
     let cancelled = false;
 
@@ -51,7 +51,6 @@ export default function Home() {
     };
   }, [count]);
 
-  // Filter, search, price range and sort items (Boosted items stay on top)
   const visibleItems = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
@@ -72,18 +71,15 @@ export default function Home() {
           item.description?.toLowerCase().includes(term)
       )
       .sort((a, b) => {
-        // 1st Priority: Boosted items always come first
         const boostedDiff = Number(isBoosted(b)) - Number(isBoosted(a));
         if (boostedDiff !== 0) return boostedDiff;
 
-        // 2nd Priority: User selected sorting
         const priceA = Number(a.price) || 0;
         const priceB = Number(b.price) || 0;
 
         if (sortBy === 'price-low') return priceA - priceB;
         if (sortBy === 'price-high') return priceB - priceA;
 
-        // Default ('newest'): latest creation date first
         const timeA = a.createdAt?.seconds || new Date(a.createdAt || 0).getTime() / 1000;
         const timeB = b.createdAt?.seconds || new Date(b.createdAt || 0).getTime() / 1000;
         return timeB - timeA;
@@ -93,87 +89,97 @@ export default function Home() {
   const canLoadMore = !loading && !error && items.length >= count;
 
   return (
-    <div>
-      <Hero
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        selectedLocation={selectedLocation}
-        setSelectedLocation={setSelectedLocation}
-      />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+      {/* Hero Banner Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-[#064E3B] rounded-3xl p-6 sm:p-10 text-white shadow-lg relative overflow-hidden"
+      >
+        <div className="max-w-2xl relative z-10 space-y-4">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-700/60 text-amber-300 text-xs font-bold border border-emerald-600/50">
+            <Sparkles className="w-3.5 h-3.5" /> Calabar's Premium Marketplace
+          </span>
+          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+            Shop, Sell & Grow Across Calabar
+          </h1>
+          <p className="text-emerald-100 text-xs sm:text-sm leading-relaxed">
+            Buy directly from verified vendors and local sellers in UNICAL, Etta Agbo, Marian Road, and Satellite Town.
+          </p>
+
+          <Hero
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedLocation={selectedLocation}
+            setSelectedLocation={setSelectedLocation}
+          />
+        </div>
+      </motion.div>
 
       <CategoryPills selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
 
-      {/* 🌟 Top Verified Brands in Calabar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
         <HomeBrandsSection />
       </div>
 
       {/* Sort & Price Filter Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
-          
-          <div className="text-xs font-bold text-gray-700 flex items-center space-x-2 w-full md:w-auto">
-            <span>Filter & Sort Listings ({visibleItems.length} found)</span>
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="text-xs font-bold text-gray-700 flex items-center space-x-2 w-full md:w-auto">
+          <span>Filter & Sort Listings ({visibleItems.length} found)</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs">
+            <span className="text-gray-400 mr-1">₦</span>
+            <input
+              type="number"
+              placeholder="Min Price"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              className="w-20 bg-transparent focus:outline-none text-gray-800 font-medium"
+            />
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            
-            {/* Min Price */}
-            <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs">
-              <span className="text-gray-400 mr-1">₦</span>
-              <input
-                type="number"
-                placeholder="Min Price"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                className="w-20 bg-transparent focus:outline-none text-gray-800 font-medium"
-              />
-            </div>
+          <span className="text-gray-300">-</span>
 
-            <span className="text-gray-300">-</span>
+          <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs">
+            <span className="text-gray-400 mr-1">₦</span>
+            <input
+              type="number"
+              placeholder="Max Price"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              className="w-20 bg-transparent focus:outline-none text-gray-800 font-medium"
+            />
+          </div>
 
-            {/* Max Price */}
-            <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs">
-              <span className="text-gray-400 mr-1">₦</span>
-              <input
-                type="number"
-                placeholder="Max Price"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                className="w-20 bg-transparent focus:outline-none text-gray-800 font-medium"
-              />
-            </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:border-[#22C55E] cursor-pointer"
+          >
+            <option value="newest">Newest First</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+          </select>
 
-            {/* Sort Dropdown */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:border-[#22C55E] cursor-pointer"
+          {(minPrice || maxPrice || sortBy !== 'newest') && (
+            <button
+              onClick={() => {
+                setMinPrice('');
+                setMaxPrice('');
+                setSortBy('newest');
+              }}
+              className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 cursor-pointer"
             >
-              <option value="newest">Newest First</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-            </select>
-
-            {/* Clear Filters Button */}
-            {(minPrice || maxPrice || sortBy !== 'newest') && (
-              <button
-                onClick={() => {
-                  setMinPrice('');
-                  setMaxPrice('');
-                  setSortBy('newest');
-                }}
-                className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 cursor-pointer"
-              >
-                Reset
-              </button>
-            )}
-
-          </div>
+              Reset
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 pb-8">
+      <div>
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl flex items-center space-x-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -190,11 +196,69 @@ export default function Home() {
             <p className="text-xs text-gray-500">Try another category, location, price range or search word.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {visibleItems.map((item) => (
-              <ProductCard key={item.id} item={item} />
-            ))}
-          </div>
+          <motion.div 
+            layout
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"
+          >
+            <AnimatePresence>
+              {visibleItems.map((item) => {
+                const isFeaturedItem = item.isFeatured && item.featuredUntil > Date.now();
+                return (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    <Link
+                      to={`/item/${item.id}`}
+                      className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 block overflow-hidden transform hover:-translate-y-1 h-full flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="aspect-square relative overflow-hidden bg-gray-100">
+                          {isFeaturedItem && (
+                            <span className="absolute top-2 left-2 z-10 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-lg shadow-md border border-amber-200 tracking-wider flex items-center gap-1">
+                              ⭐ FEATURED
+                            </span>
+                          )}
+                          <img
+                            src={item.images?.[0] || item.imageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30'}
+                            alt={item.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <span className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 font-medium">
+                            <Eye className="w-3 h-3 text-emerald-400" /> {item.views || 0}
+                          </span>
+                        </div>
+
+                        <div className="p-3">
+                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                            {item.category}
+                          </span>
+                          <h3 className="text-xs font-bold text-gray-800 line-clamp-1 mt-1.5 group-hover:text-[#22C55E] transition-colors">
+                            {item.title}
+                          </h3>
+                        </div>
+                      </div>
+
+                      <div className="p-3 pt-0">
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                          <span className="text-xs font-extrabold text-[#22C55E]">
+                            ₦{Number(item.price).toLocaleString()}
+                          </span>
+                          <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                            <MapPin className="w-3 h-3 text-gray-400" /> {item.location?.split(',')[0]}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
         )}
 
         {canLoadMore && (
