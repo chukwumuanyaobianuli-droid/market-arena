@@ -168,16 +168,13 @@ export default function BrandProfile() {
             </div>
           )}
 
-          {/* Location & Public Metrics Bar */}
+          {/* Location & Public Metrics Bar (Subscription plan badge removed) */}
           <div className="flex flex-wrap items-center gap-6 text-xs text-gray-500 border-t pt-4">
             <span className="flex items-center gap-1.5 font-medium text-gray-700">
               <MapPin className="w-4 h-4 text-emerald-600" /> {brand.location || 'Calabar, Nigeria'}
             </span>
             <span className="flex items-center gap-1.5 font-medium text-gray-700">
               <ShoppingBag className="w-4 h-4 text-emerald-600" /> {items.length} Products in Catalog
-            </span>
-            <span className="bg-emerald-50 text-emerald-700 font-bold px-3 py-1 rounded-full uppercase text-[10px]">
-              {brand.subscriptionPlan === 'free' ? 'Free Trial Plan' : `${brand.subscriptionPlan || 'Active'} Storefront`}
             </span>
           </div>
         </div>
