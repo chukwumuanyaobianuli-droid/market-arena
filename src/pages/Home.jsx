@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { PackageOpen, AlertCircle, Eye, Sparkles, MapPin } from 'lucide-react';
+import { PackageOpen, AlertCircle, Eye, MapPin } from 'lucide-react';
 import { db } from '../firebase/firebase';
 import Hero from '../components/Hero';
 import CategoryPills from '../components/CategoryPills';
@@ -21,7 +21,7 @@ export default function Home() {
   const [selectedLocation, setSelectedLocation] = useState('All Locations');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const [sortBy, setSortBy] = useState('newest'); // 'newest', 'price-low', 'price-high'
+  const [sortBy, setSortBy] = useState('newest');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
 
@@ -89,33 +89,19 @@ export default function Home() {
   const canLoadMore = !loading && !error && items.length >= count;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-      {/* Hero Banner Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-[#064E3B] rounded-3xl p-6 sm:p-10 text-white shadow-lg relative overflow-hidden"
-      >
-        <div className="max-w-2xl relative z-10 space-y-4">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-700/60 text-amber-300 text-xs font-bold border border-emerald-600/50">
-            <Sparkles className="w-3.5 h-3.5" /> Calabar's Premium Marketplace
-          </span>
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
-            Shop, Sell & Grow Across Calabar
-          </h1>
-          <p className="text-emerald-100 text-xs sm:text-sm leading-relaxed">
-            Buy directly from verified vendors and local sellers in UNICAL, Etta Agbo, Marian Road, and Satellite Town.
-          </p>
-
-          <Hero
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedLocation={selectedLocation}
-            setSelectedLocation={setSelectedLocation}
-          />
-        </div>
-      </motion.div>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8"
+    >
+      {/* Clean Hero Component without duplication */}
+      <Hero
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedLocation={selectedLocation}
+        setSelectedLocation={setSelectedLocation}
+      />
 
       <CategoryPills selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
 
@@ -276,6 +262,6 @@ export default function Home() {
           <p className="text-center text-xs text-gray-400 mt-4">Loading more...</p>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

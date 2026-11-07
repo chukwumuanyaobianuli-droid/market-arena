@@ -1,14 +1,14 @@
 import React from 'react';
 import { Search, PlusCircle, ShieldCheck, Sparkles, MapPin, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 export default function Hero({ searchTerm = '', setSearchTerm, selectedCategory = '', setSelectedCategory }) {
   const navigate = useNavigate();
 
-  // Change this string if your sell route is different (e.g., '/create' or '/post-ad')
-const handlePostClick = () => {
-  navigate('/post-item');
-};
+  const handlePostClick = () => {
+    navigate('/post-item');
+  };
 
   const handleCategoryClick = (cat) => {
     if (setSelectedCategory) {
@@ -17,7 +17,12 @@ const handlePostClick = () => {
   };
 
   return (
-    <div className="relative bg-gradient-to-b from-emerald-50/60 via-white to-white border-b border-gray-100 overflow-hidden pt-8 pb-14 px-4 sm:px-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="relative bg-gradient-to-b from-emerald-50/60 via-white to-white border-b border-gray-100 overflow-hidden pt-8 pb-14 px-4 sm:px-6 rounded-3xl mb-6 shadow-sm"
+    >
       
       {/* Soft Glow Background Elements */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#22C55E]/10 rounded-full blur-3xl pointer-events-none" />
@@ -30,24 +35,44 @@ const handlePostClick = () => {
           <div className="lg:col-span-7 text-left space-y-6">
             
             {/* Pill Tag */}
-            <div className="inline-flex items-center space-x-2 bg-emerald-100/70 border border-emerald-200/80 px-3.5 py-1.5 rounded-full">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1, duration: 0.3 }}
+              className="inline-flex items-center space-x-2 bg-emerald-100/70 border border-emerald-200/80 px-3.5 py-1.5 rounded-full"
+            >
               <Sparkles className="w-3.5 h-3.5 text-[#22C55E]" />
               <span className="text-xs font-bold text-[#064E3B] tracking-wide">
                 Calabar's Premium Verified Marketplace
               </span>
-            </div>
+            </motion.div>
 
             {/* Main Headline */}
-            <h1 className="text-3xl sm:text-5xl font-black text-gray-900 tracking-tight leading-[1.15]">
+            <motion.h1 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="text-3xl sm:text-5xl font-black text-gray-900 tracking-tight leading-[1.15]"
+            >
               Shop, Sell & Grow Across <span className="bg-gradient-to-r from-[#064E3B] via-[#16a34a] to-[#22C55E] bg-clip-text text-transparent">Calabar</span>
-            </h1>
+            </motion.h1>
 
-            <p className="text-sm sm:text-base text-gray-600 font-normal leading-relaxed max-w-xl">
+            <motion.p 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              className="text-sm sm:text-base text-gray-600 font-normal leading-relaxed max-w-xl"
+            >
               Buy directly from verified sellers in UNICAL, Etta Agbo, Marian Road, Satellite Town, and across Calabar with zero hassle.
-            </p>
+            </motion.p>
 
             {/* Big Clean Search Box */}
-            <div className="bg-white p-2.5 rounded-2xl shadow-xl shadow-emerald-950/5 border border-gray-200/80 flex flex-col sm:flex-row items-center gap-2 max-w-2xl">
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+              className="bg-white p-2.5 rounded-2xl shadow-xl shadow-emerald-950/5 border border-gray-200/80 flex flex-col sm:flex-row items-center gap-2 max-w-2xl"
+            >
               <div className="flex items-center w-full px-3 py-2">
                 <Search className="w-5 h-5 text-[#22C55E] mr-2 shrink-0" />
                 <input
@@ -67,7 +92,7 @@ const handlePostClick = () => {
                 <PlusCircle className="w-4 h-4" />
                 <span>Post Ad</span>
               </button>
-            </div>
+            </motion.div>
 
             {/* Popular Quick Filter Pills */}
             <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
@@ -103,13 +128,17 @@ const handlePostClick = () => {
           </div>
 
           {/* Right Column: Hero Visual Graphic */}
-          <div className="lg:col-span-5 relative hidden lg:block">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="lg:col-span-5 relative hidden lg:block"
+          >
             <div className="relative mx-auto w-full max-w-md">
               <div className="bg-gradient-to-br from-[#064E3B] to-[#16a34a] p-6 rounded-3xl shadow-2xl text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
                 
                 <div className="flex items-center justify-between mb-6">
-                  <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain bg-white/10 p-1.5 rounded-xl" />
                   <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                     Featured Store
                   </span>
@@ -140,10 +169,10 @@ const handlePostClick = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
