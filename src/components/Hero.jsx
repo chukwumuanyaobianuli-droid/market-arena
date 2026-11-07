@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, PlusCircle, ShieldCheck, Sparkles, MapPin, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import AnimatedText from './AnimatedText'; // Ensure path matches your project structure
 
 export default function Hero({ searchTerm = '', setSearchTerm, selectedCategory = '', setSelectedCategory }) {
   const navigate = useNavigate();
@@ -18,12 +19,12 @@ export default function Hero({ searchTerm = '', setSearchTerm, selectedCategory 
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 260, damping: 25 }}
+      initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       className="relative bg-gradient-to-b from-emerald-50/80 via-white to-white border border-gray-100 overflow-hidden pt-8 pb-14 px-4 sm:px-6 rounded-3xl mb-6 shadow-sm"
     >
-      {/* Dynamic Glow Elements */}
+      {/* Background Soft Glow */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#22C55E]/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-10 left-10 w-72 h-72 bg-emerald-300/20 rounded-full blur-2xl pointer-events-none" />
 
@@ -33,11 +34,11 @@ export default function Hero({ searchTerm = '', setSearchTerm, selectedCategory 
           {/* Left Column: Headlines & Search */}
           <div className="lg:col-span-7 text-left space-y-6">
             
-            {/* Pill Tag */}
+            {/* Pill Tag with subtle scale-blur reveal */}
             <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.1 }}
+              initial={{ opacity: 0, scale: 0.9, filter: "blur(5px)" }}
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              transition={{ duration: 0.5, delay: 0.1 }}
               className="inline-flex items-center space-x-2 bg-emerald-100/80 border border-emerald-200 px-3.5 py-1.5 rounded-full shadow-sm"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#22C55E]" />
@@ -46,30 +47,34 @@ export default function Hero({ searchTerm = '', setSearchTerm, selectedCategory 
               </span>
             </motion.div>
 
-            {/* Main Headline */}
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 24, delay: 0.15 }}
-              className="text-3xl sm:text-5xl font-black text-gray-900 tracking-tight leading-[1.15]"
-            >
-              Shop, Sell & Grow Across <span className="bg-gradient-to-r from-[#064E3B] via-[#16a34a] to-[#22C55E] bg-clip-text text-transparent">Calabar</span>
-            </motion.h1>
+            {/* Smooth Word-by-Word Headline Reveal */}
+            <h1 className="text-3xl sm:text-5xl font-black text-gray-900 tracking-tight leading-[1.15]">
+              <AnimatedText text="Shop, Sell & Grow Across" className="inline-block" />{" "}
+              <motion.span 
+                initial={{ opacity: 0, filter: "blur(10px)" }}
+                animate={{ opacity: 1, filter: "blur(0px)" }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="bg-gradient-to-r from-[#064E3B] via-[#16a34a] to-[#22C55E] bg-clip-text text-transparent inline-block"
+              >
+                Calabar
+              </motion.span>
+            </h1>
 
+            {/* Smooth Blurred Subheadline */}
             <motion.p 
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 24, delay: 0.2 }}
+              initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.6, delay: 0.5 }}
               className="text-sm sm:text-base text-gray-600 font-normal leading-relaxed max-w-xl"
             >
               Buy directly from verified sellers in UNICAL, Etta Agbo, Marian Road, Satellite Town, and across Calabar with zero hassle.
             </motion.p>
 
-            {/* Big Clean Search Box */}
+            {/* Search Box Float-In */}
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 24, delay: 0.25 }}
+              initial={{ opacity: 0, y: 15, filter: "blur(5px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.6, delay: 0.6 }}
               className="bg-white p-2.5 rounded-2xl shadow-xl shadow-emerald-950/5 border border-gray-200/80 flex flex-col sm:flex-row items-center gap-2 max-w-2xl"
             >
               <div className="flex items-center w-full px-3 py-2">
@@ -95,8 +100,13 @@ export default function Hero({ searchTerm = '', setSearchTerm, selectedCategory 
               </motion.button>
             </motion.div>
 
-            {/* Popular Quick Filter Pills */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+            {/* Quick Category Filter Pills */}
+            <motion.div 
+              initial={{ opacity: 0, filter: "blur(4px)" }}
+              animate={{ opacity: 1, filter: "blur(0px)" }}
+              transition={{ duration: 0.5, delay: 0.7 }}
+              className="flex flex-wrap items-center gap-2 pt-1 text-xs"
+            >
               <span className="text-gray-400 font-medium mr-1 text-[11px]">Popular:</span>
               {['Hostels & Rooms', 'Phones & Laptops', 'Fashion & Wear', 'Services'].map((cat) => (
                 <motion.button
@@ -114,7 +124,7 @@ export default function Hero({ searchTerm = '', setSearchTerm, selectedCategory 
                   {cat}
                 </motion.button>
               ))}
-            </div>
+            </motion.div>
 
             {/* Badges */}
             <div className="pt-2 flex items-center space-x-6 text-xs font-semibold text-gray-500">
@@ -130,17 +140,17 @@ export default function Hero({ searchTerm = '', setSearchTerm, selectedCategory 
 
           </div>
 
-          {/* Right Column: Hero Visual Graphic with Floating Motion */}
+          {/* Right Column Visual Card */}
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.3 }}
+            initial={{ opacity: 0, scale: 0.95, filter: "blur(8px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            transition={{ duration: 0.7, delay: 0.4 }}
             className="lg:col-span-5 relative hidden lg:block"
           >
             <div className="relative mx-auto w-full max-w-md">
               <motion.div 
-                animate={{ y: [0, -8, 0] }}
-                transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                animate={{ y: [0, -6, 0] }}
+                transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
                 className="bg-gradient-to-br from-[#064E3B] to-[#16a34a] p-6 rounded-3xl shadow-2xl text-white relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
